@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#1A1A2E</color>
+
+    <!-- Dark Theme Colors -->
+    <color name="primary_dark">#1F1F1F</color>
+    <color name="background_dark">#121212</color>
+    <color name="surface_dark">#2C2C2C</color>
+    <color name="text_dark">#FFFFFF</color>
+
+    <!-- Light Theme Colors -->
+    <color name="primary_light">#F5F5F5</color>
+    <color name="background_light">#FFFFFF</color>
+    <color name="surface_light">#EEEEEE</color>
+    <color name="text_light">#000000</color>
+</resources>

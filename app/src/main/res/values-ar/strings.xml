@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">M3U Player</string>
+    <string name="enter_url_hint">رابط ملف m3u/m3u8</string>
+    <string name="load_from_url">تحميل من رابط</string>
+    <string name="pick_local_file">اختيار ملف محلي</string>
+    <string name="no_channels_found">لا يوجد محتوى</string>
+    <string name="load_error">خطأ بالتحميل: %1$s</string>
+    <string name="login_required">الرجاء تسجيل الدخول أولاً</string>
+
+    <string name="xtream_login_title">تسجيل دخول Xtream</string>
+    <string name="xtream_login_button">تسجيل دخول Xtream</string>
+    <string name="profile_name_hint">اسم الملف التعريفي (مثلاً: حسابي)</string>
+    <string name="server_url_hint">رابط السيرفر (http://host:port)</string>
+    <string name="username_hint">اسم المستخدم</string>
+    <string name="password_hint">كلمة المرور</string>
+    <string name="login_button">تسجيل الدخول وحفظ الملف التعريفي</string>
+    <string name="saved_profiles_title">الملفات التعريفية المحفوظة</string>
+    <string name="fill_all_fields">الرجاء تعبئة كل الحقول</string>
+    <string name="delete_profile">حذف الملف التعريفي</string>
+
+    <string name="tab_live">بث مباشر</string>
+    <string name="tab_movies">أفلام</string>
+    <string name="tab_series">مسلسلات</string>
+    <string name="tab_manual">رابط يدوي</string>
+
+    <string name="profile_label">اسم الملف التعريفي</string>
+    <string name="tab_favorites">المفضلة</string>
+    <string name="search_hint">بحث عن القنوات...</string>
+</resources>

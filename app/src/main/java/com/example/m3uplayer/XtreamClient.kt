@@ -1,0 +1,183 @@
+package com.example.m3uplayer
+
+import okhttp3.Dns
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.Proxy
+
+object XtreamClient {
+
+    private var httpClient = createDefaultClient()
+
+    private fun createDefaultClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .dns(AdGuardDns())
+            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+    }
+
+    class AdGuardDns : Dns {
+        override fun lookup(hostname: String): List<InetAddress> {
+            return InetAddress.getAllByName(hostname).toList()
+        }
+    }
+
+    data class LoginResult(val success: Boolean, val message: String)
+
+    /**
+     * تحديث إعدادات الشبكة (بروكسي اختياري).
+     * يُستدعى من SettingsActivity عند تغيير إعدادات الملف التعريفي.
+     */
+    fun updateNetworkSettings(proxyHost: String?, proxyPort: Int, dnsServer: String?) {
+        val builder = OkHttpClient.Builder()
+            .dns(AdGuardDns())
+            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+
+        if (!proxyHost.isNullOrBlank() && proxyPort > 0) {
+            val proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress(proxyHost, proxyPort))
+            builder.proxy(proxy)
+        }
+
+        httpClient = builder.build()
+    }
+
+    fun updateProxy(host: String?, port: Int) {
+        updateNetworkSettings(host, port, null)
+    }
+
+    private fun clean(url: String) = url.trim().trimEnd('/')
+
+    private fun apiUrl(
+        server: String,
+        username: String,
+        password: String,
+        action: String? = null
+    ): String {
+        val base = "${clean(server)}/player_api.php?username=$username&password=$password"
+        return if (action != null) "$base&action=$action" else base
+    }
+
+    private fun fetchJson(url: String): String {
+        val request = Request.Builder().url(url).build()
+        httpClient.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw Exception("رمز الاستجابة: ${response.code}")
+            return response.body?.string().orEmpty()
+        }
+    }
+
+    fun login(serverUrl: String, username: String, password: String): LoginResult {
+        return try {
+            val body = fetchJson(apiUrl(serverUrl, username, password))
+            val json = JSONObject(body)
+            val userInfo = json.optJSONObject("user_info")
+            val auth = userInfo?.optInt("auth", 0) ?: 0
+            if (auth == 1) {
+                LoginResult(true, "تم تسجيل الدخول بنجاح")
+            } else {
+                LoginResult(false, "بيانات الدخول غير صحيحة")
+            }
+        } catch (e: Exception) {
+            LoginResult(false, "خطأ في الاتصال: ${e.message}")
+        }
+    }
+
+    fun liveStreamUrl(server: String, username: String, password: String, streamId: String): String =
+        "${clean(server)}/live/$username/$password/$streamId.m3u8"
+
+    fun vodStreamUrl(server: String, username: String, password: String, streamId: String, ext: String): String =
+        "${clean(server)}/movie/$username/$password/$streamId.$ext"
+
+    fun episodeStreamUrl(server: String, username: String, password: String, episodeId: String, ext: String): String =
+        "${clean(server)}/series/$username/$password/$episodeId.$ext"
+
+    fun fetchLive(server: String, username: String, password: String): List<MediaEntry> {
+        val body = fetchJson(apiUrl(server, username, password, "get_live_streams"))
+        val array = JSONArray(body)
+        return (0 until array.length()).map { i ->
+            val item = array.getJSONObject(i)
+            val id = item.optString("stream_id")
+            MediaEntry(
+                id         = id,
+                title      = item.optString("name", "بدون اسم"),
+                subtitle   = item.optString("category_id", null),
+                playUrl    = liveStreamUrl(server, username, password, id),
+                groupTitle = item.optString("category_name", null),
+                imageUrl   = item.optString("stream_icon", null).takeIf { it.isNotEmpty() }
+            )
+        }
+    }
+
+    fun fetchVod(server: String, username: String, password: String): List<MediaEntry> {
+        val body = fetchJson(apiUrl(server, username, password, "get_vod_streams"))
+        val array = JSONArray(body)
+        return (0 until array.length()).map { i ->
+            val item = array.getJSONObject(i)
+            val id  = item.optString("stream_id")
+            val ext = item.optString("container_extension", "mp4")
+            MediaEntry(
+                id         = id,
+                title      = item.optString("name", "بدون اسم"),
+                playUrl    = vodStreamUrl(server, username, password, id, ext),
+                groupTitle = item.optString("category_name", null),
+                imageUrl   = item.optString("stream_icon", null).takeIf { it.isNotEmpty() }
+            )
+        }
+    }
+
+    fun fetchSeriesList(server: String, username: String, password: String): List<MediaEntry> {
+        val body = fetchJson(apiUrl(server, username, password, "get_series"))
+        val array = JSONArray(body)
+        return (0 until array.length()).map { i ->
+            val item = array.getJSONObject(i)
+            MediaEntry(
+                id       = item.optString("series_id"),
+                title    = item.optString("name", "بدون اسم"),
+                isSeries = true,
+                imageUrl = item.optString("stream_icon", null).takeIf { it.isNotEmpty() }
+            )
+        }
+    }
+
+    fun fetchSeriesEpisodes(
+        server: String,
+        username: String,
+        password: String,
+        seriesId: String
+    ): List<MediaEntry> {
+        val body = fetchJson(
+            apiUrl(server, username, password, "get_series_info") + "&series_id=$seriesId"
+        )
+        val json = JSONObject(body)
+        val episodesObj = json.optJSONObject("episodes") ?: return emptyList()
+        val result = mutableListOf<MediaEntry>()
+
+        val seasonKeys = episodesObj.keys()
+        while (seasonKeys.hasNext()) {
+            val season = seasonKeys.next()
+            val seasonArray = episodesObj.optJSONArray(season) ?: continue
+            for (i in 0 until seasonArray.length()) {
+                val ep    = seasonArray.getJSONObject(i)
+                val id    = ep.optString("id")
+                val epNum = ep.optString("episode_num", "?")
+                val title = ep.optString("title", "حلقة $epNum")
+                val ext   = ep.optJSONObject("info")?.optString("container_extension")
+                    ?: ep.optString("container_extension", "mp4")
+                result.add(
+                    MediaEntry(
+                        id       = id,
+                        title    = "الموسم $season - الحلقة $epNum",
+                        subtitle = title,
+                        playUrl  = episodeStreamUrl(server, username, password, id, ext)
+                    )
+                )
+            }
+        }
+        return result
+    }
+}

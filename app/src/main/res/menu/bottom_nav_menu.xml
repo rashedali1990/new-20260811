@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@android:drawable/ic_menu_today"
+        android:title="الرئيسية" />
+    <item
+        android:id="@+id/nav_live"
+        android:icon="@android:drawable/ic_menu_view"
+        android:title="بث مباشر" />
+    <item
+        android:id="@+id/nav_movies"
+        android:icon="@android:drawable/ic_menu_gallery"
+        android:title="أفلام" />
+    <item
+        android:id="@+id/nav_series"
+        android:icon="@android:drawable/ic_menu_agenda"
+        android:title="مسلسلات" />
+    <item
+        android:id="@+id/nav_manual"
+        android:icon="@android:drawable/ic_menu_add"
+        android:title="رابط يدوي" />
+</menu>
