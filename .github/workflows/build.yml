@@ -36,11 +36,11 @@ jobs:
         run: ./gradlew lint --stacktrace
         continue-on-error: true
 
-      - name: Print lint text report (diagnostics)
+      - name: Print lint report (diagnostics)
         if: always()
         run: |
           shopt -s nullglob
-          for f in app/build/reports/lint-results-*.txt; do
+          for f in app/build/reports/lint-results-*.xml app/build/reports/lint-results-*.txt; do
             echo "===== $f ====="
             cat "$f"
           done
