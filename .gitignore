@@ -1,0 +1,35 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+local.properties
+
+# Gradle wrapper distribution cache (not the wrapper jar itself, which IS tracked)
+gradle-wrapper.properties.bak
+
+# Android Studio generated files
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+
+# Log files
+*.log
+
+# Keystore files (never commit signing keys)
+*.jks
+*.keystore
+
+# Generated files
+bin/
+gen/
+out/
+
+# OS-generated files
+Thumbs.db
