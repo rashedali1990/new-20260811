@@ -32,7 +32,24 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run lint checks
+        id: lint
         run: ./gradlew lint --stacktrace
+        continue-on-error: true
+
+      - name: Print lint text report (diagnostics)
+        if: always()
+        run: |
+          shopt -s nullglob
+          for f in app/build/reports/lint-results-*.txt; do
+            echo "===== $f ====="
+            cat "$f"
+          done
+
+      - name: Fail job if lint found real errors
+        if: steps.lint.outcome == 'failure'
+        run: |
+          echo "Lint step failed — see 'Print lint text report' step above for details."
+          exit 1
 
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
