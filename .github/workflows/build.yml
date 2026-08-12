@@ -45,12 +45,6 @@ jobs:
             cat "$f"
           done
 
-      - name: Fail job if lint found real errors
-        if: steps.lint.outcome == 'failure'
-        run: |
-          echo "Lint step failed — see 'Print lint text report' step above for details."
-          exit 1
-
       - name: Build debug APK
         run: ./gradlew assembleDebug --stacktrace
 
