@@ -297,15 +297,15 @@ class MainActivity : AppCompatActivity() {
 
                 // أحدث الأفلام
                 binding.recyclerLatestMovies.layoutManager = GridLayoutManager(this@MainActivity, GRID_SPAN_COUNT)
-                binding.recyclerLatestMovies.adapter = PosterAdapter(movies.take(12)) { entry ->
+                binding.recyclerLatestMovies.adapter = PosterAdapter(items = movies.take(12), onClick = { entry ->
                     handleMediaClick(entry)
-                }
+                })
 
                 // أحدث المسلسلات
                 binding.recyclerLatestSeries.layoutManager = GridLayoutManager(this@MainActivity, GRID_SPAN_COUNT)
-                binding.recyclerLatestSeries.adapter = PosterAdapter(series.take(12)) { entry ->
+                binding.recyclerLatestSeries.adapter = PosterAdapter(items = series.take(12), onClick = { entry ->
                     handleMediaClick(entry)
-                }
+                })
 
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "خطأ في تحميل لوحة التحكم: ${e.message}", Toast.LENGTH_LONG).show()
