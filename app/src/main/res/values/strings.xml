@@ -40,4 +40,16 @@
     <string name="no_tracks_available">No alternative tracks available for this content</string>
     <string name="added_to_favorites">Added to favorites</string>
     <string name="removed_from_favorites">Removed from favorites</string>
+
+    <string name="customization_language">Customization &amp; Language</string>
+    <string name="theme_label">Theme</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="language_label">Interface Language</string>
+    <string name="lang_ar">العربية</string>
+    <string name="lang_en">English</string>
+    <string name="manual_playlist_title">Manual M3U Playlist</string>
+    <string name="manual_url_hint">M3U File URL</string>
+    <string name="load_manual_url">Load and play from URL</string>
+    <string name="pick_manual_file">Pick M3U file from device</string>
 </resources>

@@ -1,20 +1,17 @@
 package com.example.m3uplayer
 
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import com.example.m3uplayer.databinding.ActivitySettingsBinding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import java.io.BufferedReader
-import java.io.InputStreamReader
+import java.util.Locale
 
 class SettingsActivity : AppCompatActivity() {
     private lateinit var binding: ActivitySettingsBinding
@@ -39,6 +36,38 @@ class SettingsActivity : AppCompatActivity() {
             binding.editUsername.setText(it.username)
             binding.editPassword.setText(it.password)
             binding.editDnsServer.setText(it.dnsServer)
+        }
+
+        // Theme Selection
+        val prefs = getSharedPreferences("m3uplayer_settings", Context.MODE_PRIVATE)
+        val isDarkMode = prefs.getBoolean("dark_mode", true)
+        if (isDarkMode) binding.toggleTheme.check(R.id.buttonDarkTheme)
+        else binding.toggleTheme.check(R.id.buttonLightTheme)
+
+        binding.toggleTheme.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                val dark = checkedId == R.id.buttonDarkTheme
+                prefs.edit().putBoolean("dark_mode", dark).apply()
+                AppCompatDelegate.setDefaultNightMode(
+                    if (dark) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO
+                )
+            }
+        }
+
+        // Language Selection
+        val currentLang = prefs.getString("language", "ar")
+        if (currentLang == "en") binding.toggleLanguage.check(R.id.buttonLangEn)
+        else binding.toggleLanguage.check(R.id.buttonLangAr)
+
+        binding.toggleLanguage.addOnButtonCheckedListener { _, checkedId, isChecked ->
+            if (isChecked) {
+                val lang = if (checkedId == R.id.buttonLangEn) "en" else "ar"
+                if (lang != prefs.getString("language", "ar")) {
+                    prefs.edit().putString("language", lang).apply()
+                    setLocale(lang)
+                    recreate()
+                }
+            }
         }
 
         binding.buttonSaveProfile.setOnClickListener {
@@ -74,8 +103,6 @@ class SettingsActivity : AppCompatActivity() {
             if (url.isEmpty()) {
                 Toast.makeText(this, "الرجاء إدخال رابط M3U صحيح", Toast.LENGTH_SHORT).show()
             } else {
-                Toast.makeText(this, "جاري تحميل القائمة اليدوية...", Toast.LENGTH_SHORT).show()
-                // Save or open player / pass back
                 val intent = Intent(this, MainActivity::class.java).apply {
                     putExtra("extra_manual_url", url)
                 }
@@ -87,7 +114,6 @@ class SettingsActivity : AppCompatActivity() {
             ActivityResultContracts.OpenDocument()
         ) { uri: Uri? ->
             uri?.let {
-                Toast.makeText(this, "تم اختيار الملف بنجاح", Toast.LENGTH_SHORT).show()
                 val intent = Intent(this, MainActivity::class.java).apply {
                     putExtra("extra_manual_uri", it.toString())
                 }
@@ -116,5 +142,13 @@ class SettingsActivity : AppCompatActivity() {
         binding.buttonImportBackup.setOnClickListener {
             importLauncher.launch(arrayOf("application/json"))
         }
+    }
+
+    private fun setLocale(lang: String) {
+        val locale = Locale(lang)
+        Locale.setDefault(locale)
+        val config = Configuration()
+        config.setLocale(locale)
+        baseContext.resources.updateConfiguration(config, baseContext.resources.displayMetrics)
     }
 }

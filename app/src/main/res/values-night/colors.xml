@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#090A0F</color>
+
+    <color name="brand_primary">#FF6144</color>
+    <color name="brand_primary_dark">#D94831</color>
+    <color name="brand_secondary">#8176FF</color>
+    <color name="brand_soft">#3A2525</color>
+    <color name="rating_gold">#FFC857</color>
+
+    <color name="background_main">#090A0F</color>
+    <color name="background_raised">#11131B</color>
+    <color name="surface_dark">#181B25</color>
+    <color name="surface_high">#222633</color>
+    <color name="surface_muted">#151821</color>
+    <color name="stroke">#303544</color>
+
+    <color name="text_primary">#F8F9FC</color>
+    <color name="text_secondary">#B6BBC8</color>
+    <color name="text_muted">#7E8596</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    <color name="nav_item_color">#7E8596</color>
+</resources>

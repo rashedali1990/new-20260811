@@ -87,7 +87,6 @@ class MainActivity : AppCompatActivity() {
             profileManager.getLastUsedProfile()
         }
 
-        // If credentials are empty in intent, fall back to currentProfile
         if (server.isNullOrEmpty() && currentProfile != null) {
             server = currentProfile?.serverUrl
             username = currentProfile?.username
@@ -117,12 +116,10 @@ class MainActivity : AppCompatActivity() {
         binding.searchView.setOnQueryTextListener(globalSearchListener)
         binding.categorySearchView.setOnQueryTextListener(globalSearchListener)
 
-        // Initialize Preview Player
         previewPlayer = ExoPlayer.Builder(this).build().also {
             binding.previewPlayerView.player = it
         }
 
-        // Check for manual playlist passed from Settings
         intent.getStringExtra("extra_manual_url")?.let { url ->
             loadManualPlaylist(url)
         }
@@ -132,10 +129,11 @@ class MainActivity : AppCompatActivity() {
 
         binding.bottomNavigation.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_home   -> { showTab(0); true }
-                R.id.nav_live   -> { showTab(1); true }
-                R.id.nav_movies -> { showTab(2); true }
-                R.id.nav_series -> { showTab(3); true }
+                R.id.nav_home      -> { showTab(0); true }
+                R.id.nav_live      -> { showTab(1); true }
+                R.id.nav_movies    -> { showTab(2); true }
+                R.id.nav_series    -> { showTab(3); true }
+                R.id.nav_favorites -> { showTab(4); true }
                 else -> false
             }
         }
@@ -177,6 +175,10 @@ class MainActivity : AppCompatActivity() {
                 binding.splitScreenLayout.visibility = View.VISIBLE
                 loadSeries()
             }
+            4 -> {
+                binding.splitScreenLayout.visibility = View.VISIBLE
+                loadFavorites()
+            }
         }
     }
 
@@ -194,7 +196,8 @@ class MainActivity : AppCompatActivity() {
         val filtered = allMediaItems.filter { item ->
             val matchesQuery = queryText.isBlank() || item.title.contains(queryText, ignoreCase = true)
             val matchesCategory = selectedCategory == "الكل" || item.groupTitle.equals(selectedCategory, ignoreCase = true)
-            matchesQuery && matchesCategory
+            val matchesFavorite = currentTab != 4 || favoritesManager.isFavorite(item.id)
+            matchesQuery && matchesCategory && matchesFavorite
         }
         updateAdapter(filtered)
     }
@@ -223,7 +226,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateAdapter(items: List<MediaEntry>) {
         if (currentTab == 2 || currentTab == 3) {
-            // Movies & Series: Grid of posters (Right side)
             binding.recyclerContent.layoutManager = GridLayoutManager(this, 2)
             binding.recyclerContent.adapter = PosterAdapter(
                 items       = items,
@@ -233,10 +235,10 @@ class MainActivity : AppCompatActivity() {
                     val messageRes = if (favoritesManager.isFavorite(entry.id))
                         R.string.added_to_favorites else R.string.removed_from_favorites
                     Toast.makeText(this, messageRes, Toast.LENGTH_SHORT).show()
+                    if (currentTab == 4) loadFavorites()
                 }
             )
         } else {
-            // Live TV / Manual: List view
             binding.recyclerContent.layoutManager = LinearLayoutManager(this)
             binding.recyclerContent.adapter = MediaAdapter(
                 items          = items,
@@ -250,7 +252,8 @@ class MainActivity : AppCompatActivity() {
                             streamUrl = entry.playUrl ?: ""
                         )
                     }
-                    filterItems(binding.categorySearchView.query.toString())
+                    if (currentTab == 4) loadFavorites()
+                    else filterItems(binding.categorySearchView.query.toString())
                 },
                 isFavorite = { entry -> favoritesManager.isFavorite(entry.id) }
             )
@@ -270,13 +273,10 @@ class MainActivity : AppCompatActivity() {
                 }
                 startActivity(intent)
             } else if (!entry.playUrl.isNullOrEmpty()) {
-                // Auto-play on left preview player AND double tap / click to full player
                 binding.previewTitleText.text = "يعمل الآن: ${entry.title}"
                 previewPlayer?.setMediaItem(MediaItem.fromUri(entry.playUrl!!))
                 previewPlayer?.prepare()
                 previewPlayer?.play()
-
-                // Also allow clicking preview or auto opening full player if desired
                 openPlayer(entry.title, entry.playUrl!!, entry.id)
             }
         }
@@ -392,6 +392,28 @@ class MainActivity : AppCompatActivity() {
                 displayMedia(items)
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, getString(R.string.load_error, e.message), Toast.LENGTH_LONG).show()
+            } finally {
+                binding.progressBar.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun loadFavorites() {
+        val creds = requireCreds() ?: return
+        binding.progressBar.visibility = View.VISIBLE
+        lifecycleScope.launch {
+            try {
+                val live = withContext(Dispatchers.IO) { XtreamClient.fetchLive(creds.first, creds.second, creds.third) }
+                val vod = withContext(Dispatchers.IO) { XtreamClient.fetchVod(creds.first, creds.second, creds.third) }
+                val series = withContext(Dispatchers.IO) { XtreamClient.fetchSeriesList(creds.first, creds.second, creds.third) }
+                
+                val favoriteIds = favoritesManager.getFavoriteIds()
+                val allItems = live + vod + series
+                val favorites = allItems.filter { favoriteIds.contains(it.id) }
+                
+                displayMedia(favorites)
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "خطأ في تحميل المفضلة: ${e.message}", Toast.LENGTH_LONG).show()
             } finally {
                 binding.progressBar.visibility = View.GONE
             }

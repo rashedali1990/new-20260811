@@ -40,4 +40,16 @@
     <string name="no_tracks_available">لا تتوفر مسارات بديلة لهذا المحتوى</string>
     <string name="added_to_favorites">أُضيف إلى المفضلة</string>
     <string name="removed_from_favorites">أُزيل من المفضلة</string>
+
+    <string name="customization_language">التخصيص واللغة</string>
+    <string name="theme_label">السمة (Theme)</string>
+    <string name="theme_light">فاتح</string>
+    <string name="theme_dark">داكن</string>
+    <string name="language_label">لغة الواجهة</string>
+    <string name="lang_ar">العربية</string>
+    <string name="lang_en">English</string>
+    <string name="manual_playlist_title">قائمة M3U اليدوية</string>
+    <string name="manual_url_hint">رابط ملف M3U URL</string>
+    <string name="load_manual_url">تحميل وتشغيل من الرابط</string>
+    <string name="pick_manual_file">اختيار ملف M3U من الجهاز</string>
 </resources>

@@ -22,7 +22,7 @@
             android:background="@android:color/transparent"
             app:navigationIcon="@android:drawable/ic_media_previous"
             app:navigationIconTint="@color/text_primary"
-            app:title="الإعدادات"
+            app:title="@string/settings"
             app:titleTextColor="@color/text_primary" />
 
         <TextView
@@ -49,7 +49,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="الملف التعريفي"
+                    android:text="@string/profile_label"
                     android:textColor="@color/text_primary"
                     android:textSize="20sp"
                     android:textStyle="bold" />
@@ -59,7 +59,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
-                    android:hint="اسم الملف التعريفي">
+                    android:hint="@string/profile_name_hint">
                     <com.google.android.material.textfield.TextInputEditText android:id="@+id/editProfileName" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_primary" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -68,7 +68,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:hint="رابط السيرفر">
+                    android:hint="@string/server_url_hint">
                     <com.google.android.material.textfield.TextInputEditText android:id="@+id/editServerUrl" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textUri" android:textColor="@color/text_primary" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -77,7 +77,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:hint="اسم المستخدم">
+                    android:hint="@string/username_hint">
                     <com.google.android.material.textfield.TextInputEditText android:id="@+id/editUsername" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/text_primary" />
                 </com.google.android.material.textfield.TextInputLayout>
 
@@ -86,7 +86,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:hint="كلمة المرور"
+                    android:hint="@string/password_hint"
                     app:passwordToggleEnabled="true">
                     <com.google.android.material.textfield.TextInputEditText android:id="@+id/editPassword" android:layout_width="match_parent" android:layout_height="wrap_content" android:inputType="textPassword" android:textColor="@color/text_primary" />
                 </com.google.android.material.textfield.TextInputLayout>
@@ -106,7 +106,93 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
-                    android:text="حفظ التغييرات" />
+                    android:text="@string/save" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Theme and Language Settings -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.M3UPlayer.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            app:cardCornerRadius="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/customization_language"
+                    android:textColor="@color/text_primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/theme_label"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleTheme"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonLightTheme"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/theme_light" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonDarkTheme"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/theme_dark" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/language_label"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/toggleLanguage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonLangAr"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/lang_ar" />
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/buttonLangEn"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="@string/lang_en" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -127,7 +213,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="قائمة M3U اليدوية"
+                    android:text="@string/manual_playlist_title"
                     android:textColor="@color/text_primary"
                     android:textSize="20sp"
                     android:textStyle="bold" />
@@ -137,7 +223,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="14dp"
-                    android:hint="رابط ملف M3U URL">
+                    android:hint="@string/manual_url_hint">
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/editManualUrl"
                         android:layout_width="match_parent"
@@ -152,7 +238,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:text="تحميل وتشغيل من الرابط" />
+                    android:text="@string/load_manual_url" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/buttonPickManualFile"
@@ -160,7 +246,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="10dp"
-                    android:text="اختيار ملف M3U من الجهاز" />
+                    android:text="@string/pick_manual_file" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
