@@ -29,7 +29,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:text="أدر حسابك وتفضيلات المشاهدة من مكان واحد."
+            android:text="أدر حسابك وتفضيلات المشاهدة وقوائم M3U اليدوية من مكان واحد."
             android:textColor="@color/text_secondary"
             android:textSize="14sp" />
 
@@ -107,6 +107,60 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="18dp"
                     android:text="حفظ التغييرات" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Manual M3U Playlist Section -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Widget.M3UPlayer.Card"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            app:cardCornerRadius="24dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="قائمة M3U اليدوية"
+                    android:textColor="@color/text_primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    style="@style/Widget.M3UPlayer.TextInputLayout"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:hint="رابط ملف M3U URL">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/editManualUrl"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textUri"
+                        android:textColor="@color/text_primary" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonLoadManualUrl"
+                    style="@style/Widget.M3UPlayer.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="تحميل وتشغيل من الرابط" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/buttonPickManualFile"
+                    style="@style/Widget.M3UPlayer.Button.Secondary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="اختيار ملف M3U من الجهاز" />
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

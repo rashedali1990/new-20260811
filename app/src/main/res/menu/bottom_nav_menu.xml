@@ -16,8 +16,4 @@
         android:id="@+id/nav_series"
         android:icon="@android:drawable/ic_menu_agenda"
         android:title="مسلسلات" />
-    <item
-        android:id="@+id/nav_manual"
-        android:icon="@android:drawable/ic_menu_add"
-        android:title="رابط يدوي" />
 </menu>

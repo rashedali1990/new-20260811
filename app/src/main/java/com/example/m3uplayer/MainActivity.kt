@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.m3uplayer.databinding.ActivityMainBinding
+import com.google.android.material.chip.Chip
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -18,6 +19,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.BufferedReader
 import java.io.InputStreamReader
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.MediaItem
 
 class MainActivity : AppCompatActivity() {
 
@@ -42,12 +45,10 @@ class MainActivity : AppCompatActivity() {
     private var username: String? = null
     private var password: String? = null
     private var allMediaItems = mutableListOf<MediaEntry>()
+    private var currentCategories = listOf<String>()
+    private var selectedCategory: String = "الكل"
 
-    private val filePickerLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri: Uri? ->
-        uri?.let { loadPlaylistFromUri(it) }
-    }
+    private var previewPlayer: ExoPlayer? = null
 
     private val voiceSearchLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -58,6 +59,7 @@ class MainActivity : AppCompatActivity() {
                 ?.getOrNull(0)
             spokenText?.let {
                 binding.searchView.setQuery(it, true)
+                binding.categorySearchView.setQuery(it, true)
                 filterItems(it)
             }
         }
@@ -85,6 +87,13 @@ class MainActivity : AppCompatActivity() {
             profileManager.getLastUsedProfile()
         }
 
+        // If credentials are empty in intent, fall back to currentProfile
+        if (server.isNullOrEmpty() && currentProfile != null) {
+            server = currentProfile?.serverUrl
+            username = currentProfile?.username
+            password = currentProfile?.password
+        }
+
         val welcomeName = currentProfile?.profileName ?: "Guest"
         binding.textWelcome.text        = "مرحباً بك، $welcomeName"
         binding.textCurrentProfile.text = welcomeName
@@ -94,40 +103,31 @@ class MainActivity : AppCompatActivity() {
         }
 
         binding.buttonVoiceSearch.setOnClickListener {
-            val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                    android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "تحدث الآن للبحث...")
-            }
-            voiceSearchLauncher.launch(intent)
+            launchVoiceSearch()
         }
 
-        binding.searchView.setOnQueryTextListener(
-            object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
-                override fun onQueryTextSubmit(query: String?): Boolean {
-                    filterItems(query); return true
-                }
-                override fun onQueryTextChange(newText: String?): Boolean {
-                    filterItems(newText); return true
-                }
-            }
-        )
-
-        binding.recyclerContent.layoutManager = LinearLayoutManager(this)
-
-        binding.buttonLoadUrl.setOnClickListener {
-            val url = binding.editPlaylistUrl.text.toString().trim()
-            if (url.isEmpty()) {
-                Toast.makeText(this, R.string.enter_url_hint, Toast.LENGTH_SHORT).show()
-            } else {
-                loadManualPlaylist(url)
-            }
+        binding.buttonCategoryStt.setOnClickListener {
+            launchVoiceSearch()
         }
 
-        binding.buttonPickFile.setOnClickListener {
-            filePickerLauncher.launch(
-                arrayOf("audio/x-mpegurl", "application/x-mpegURL", "*/*")
-            )
+        val globalSearchListener = object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean { filterItems(query); return true }
+            override fun onQueryTextChange(newText: String?): Boolean { filterItems(newText); return true }
+        }
+        binding.searchView.setOnQueryTextListener(globalSearchListener)
+        binding.categorySearchView.setOnQueryTextListener(globalSearchListener)
+
+        // Initialize Preview Player
+        previewPlayer = ExoPlayer.Builder(this).build().also {
+            binding.previewPlayerView.player = it
+        }
+
+        // Check for manual playlist passed from Settings
+        intent.getStringExtra("extra_manual_url")?.let { url ->
+            loadManualPlaylist(url)
+        }
+        intent.getStringExtra("extra_manual_uri")?.let { uriStr ->
+            loadPlaylistFromUri(Uri.parse(uriStr))
         }
 
         binding.bottomNavigation.setOnItemSelectedListener { item ->
@@ -136,7 +136,6 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_live   -> { showTab(1); true }
                 R.id.nav_movies -> { showTab(2); true }
                 R.id.nav_series -> { showTab(3); true }
-                R.id.nav_manual -> { showTab(4); true }
                 else -> false
             }
         }
@@ -144,41 +143,91 @@ class MainActivity : AppCompatActivity() {
         showTab(0)
     }
 
-    // ─── عرض التبويبات ───────────────────────────────────────────────────────
+    private fun launchVoiceSearch() {
+        val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "تحدث للبحث الفوري أو الترجمة...")
+        }
+        voiceSearchLauncher.launch(intent)
+    }
 
     private var currentTab = 0
 
     private fun showTab(position: Int) {
         currentTab = position
-        // إخفاء كل المناطق أولاً
         binding.dashboardLayout.visibility = View.GONE
-        binding.recyclerContent.visibility = View.GONE
-        binding.manualLayout.visibility    = View.GONE
+        binding.splitScreenLayout.visibility = View.GONE
 
         when (position) {
-            0 -> { binding.dashboardLayout.visibility = View.VISIBLE; loadDashboard() }
-            1 -> { binding.recyclerContent.visibility = View.VISIBLE; loadLive() }
-            2 -> { binding.recyclerContent.visibility = View.VISIBLE; loadVod() }
-            3 -> { binding.recyclerContent.visibility = View.VISIBLE; loadSeries() }
-            4 -> { binding.manualLayout.visibility    = View.VISIBLE }
+            0 -> {
+                binding.dashboardLayout.visibility = View.VISIBLE
+                loadDashboard()
+                stopPreviewPlayer()
+            }
+            1 -> {
+                binding.splitScreenLayout.visibility = View.VISIBLE
+                loadLive()
+            }
+            2 -> {
+                binding.splitScreenLayout.visibility = View.VISIBLE
+                loadVod()
+            }
+            3 -> {
+                binding.splitScreenLayout.visibility = View.VISIBLE
+                loadSeries()
+            }
         }
     }
 
-    // ─── تصفية ───────────────────────────────────────────────────────────────
+    private fun stopPreviewPlayer() {
+        previewPlayer?.stop()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        previewPlayer?.release()
+    }
 
     private fun filterItems(query: String?) {
-        val filtered = if (query.isNullOrBlank()) allMediaItems
-        else allMediaItems.filter { it.title.contains(query, ignoreCase = true) }
+        val queryText = query ?: ""
+        val filtered = allMediaItems.filter { item ->
+            val matchesQuery = queryText.isBlank() || item.title.contains(queryText, ignoreCase = true)
+            val matchesCategory = selectedCategory == "الكل" || item.groupTitle.equals(selectedCategory, ignoreCase = true)
+            matchesQuery && matchesCategory
+        }
         updateAdapter(filtered)
+    }
+
+    private fun updateCategoriesChips(items: List<MediaEntry>) {
+        binding.chipGroupCategories.removeAllViews()
+        val categories = mutableSetOf("الكل")
+        items.forEach { if (!it.groupTitle.isNullOrBlank()) categories.add(it.groupTitle!!) }
+        currentCategories = categories.toList()
+
+        for (cat in currentCategories) {
+            val chip = Chip(this).apply {
+                text = cat
+                isCheckable = true
+                isChecked = (cat == selectedCategory)
+                setOnCheckedChangeListener { _, checked ->
+                    if (checked) {
+                        selectedCategory = cat
+                        filterItems(binding.categorySearchView.query.toString())
+                    }
+                }
+            }
+            binding.chipGroupCategories.addView(chip)
+        }
     }
 
     private fun updateAdapter(items: List<MediaEntry>) {
         if (currentTab == 2 || currentTab == 3) {
-            // الأفلام والمسلسلات: شبكة بوسترات (4 أعمدة أفقيًا وعموديًا)
-            binding.recyclerContent.layoutManager = GridLayoutManager(this, GRID_SPAN_COUNT)
+            // Movies & Series: Grid of posters (Right side)
+            binding.recyclerContent.layoutManager = GridLayoutManager(this, 2)
             binding.recyclerContent.adapter = PosterAdapter(
                 items       = items,
-                onClick     = { entry -> handleMediaClick(entry) },
+                onClick     = { entry -> handleMediaClickAutoPlay(entry) },
                 onLongClick = { entry ->
                     favoritesManager.toggleFavorite(entry.id)
                     val messageRes = if (favoritesManager.isFavorite(entry.id))
@@ -187,11 +236,11 @@ class MainActivity : AppCompatActivity() {
                 }
             )
         } else {
-            // البث المباشر: قائمة نصية (تدعم زر المفضلة المباشر)
+            // Live TV / Manual: List view
             binding.recyclerContent.layoutManager = LinearLayoutManager(this)
             binding.recyclerContent.adapter = MediaAdapter(
                 items          = items,
-                onClick        = { entry -> handleMediaClick(entry) },
+                onClick        = { entry -> handleMediaClickAutoPlay(entry) },
                 onFavoriteClick = { entry ->
                     favoritesManager.toggleFavorite(entry.id)
                     if (favoritesManager.isFavorite(entry.id)) {
@@ -201,16 +250,14 @@ class MainActivity : AppCompatActivity() {
                             streamUrl = entry.playUrl ?: ""
                         )
                     }
-                    filterItems(binding.searchView.query.toString())
+                    filterItems(binding.categorySearchView.query.toString())
                 },
                 isFavorite = { entry -> favoritesManager.isFavorite(entry.id) }
             )
         }
     }
 
-    // ─── معالجة النقر على عنصر ────────────────────────────────────────────────
-
-    private fun handleMediaClick(entry: MediaEntry) {
+    private fun handleMediaClickAutoPlay(entry: MediaEntry) {
         checkParentalLock(entry.groupTitle) {
             if (entry.isSeries) {
                 val creds = requireCreds() ?: return@checkParentalLock
@@ -222,13 +269,18 @@ class MainActivity : AppCompatActivity() {
                     putExtra(SeriesDetailActivity.EXTRA_SERIES_NAME, entry.title)
                 }
                 startActivity(intent)
-            } else if (entry.playUrl != null) {
-                openPlayer(entry.title, entry.playUrl, entry.id)
+            } else if (!entry.playUrl.isNullOrEmpty()) {
+                // Auto-play on left preview player AND double tap / click to full player
+                binding.previewTitleText.text = "يعمل الآن: ${entry.title}"
+                previewPlayer?.setMediaItem(MediaItem.fromUri(entry.playUrl!!))
+                previewPlayer?.prepare()
+                previewPlayer?.play()
+
+                // Also allow clicking preview or auto opening full player if desired
+                openPlayer(entry.title, entry.playUrl!!, entry.id)
             }
         }
     }
-
-    // ─── الرقابة الأبوية ──────────────────────────────────────────────────────
 
     private fun checkParentalLock(group: String?, onSuccess: () -> Unit) {
         if (parentalControlManager.isGroupBlocked(group)) {
@@ -255,8 +307,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ─── تحميل المحتوى ────────────────────────────────────────────────────────
-
     private fun loadDashboard() {
         val creds = requireCreds() ?: return
         binding.progressBar.visibility = View.VISIBLE
@@ -270,45 +320,27 @@ class MainActivity : AppCompatActivity() {
                     XtreamClient.fetchSeriesList(creds.first, creds.second, creds.third)
                 }
 
-                // استكمال المشاهدة
                 val history = watchHistoryManager.getHistory().take(3)
                 binding.recyclerContinueWatching.adapter = ContinueWatchingAdapter(history) { item ->
                     if (!item.url.isNullOrEmpty()) {
                         openPlayer(item.title, item.url, item.id)
                     } else {
-                        Toast.makeText(
-                            this@MainActivity,
-                            "رابط التشغيل غير متوفر لهذا العنصر",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        Toast.makeText(this@MainActivity, "رابط التشغيل غير متوفر", Toast.LENGTH_SHORT).show()
                     }
                 }
 
-                // البطل المميز
-                if (movies.isNotEmpty()) {
-                    val featured = movies[0]
-                    binding.featuredTitle.text = featured.title
-                    com.bumptech.glide.Glide.with(this@MainActivity)
-                        .load(featured.imageUrl)
-                        .placeholder(android.R.drawable.ic_menu_gallery)
-                        .error(android.R.drawable.ic_menu_gallery)
-                        .into(binding.featuredImage)
-                }
-
-                // أحدث الأفلام
-                binding.recyclerLatestMovies.layoutManager = GridLayoutManager(this@MainActivity, GRID_SPAN_COUNT)
+                binding.recyclerLatestMovies.layoutManager = GridLayoutManager(this@MainActivity, 4)
                 binding.recyclerLatestMovies.adapter = PosterAdapter(items = movies.take(12), onClick = { entry ->
-                    handleMediaClick(entry)
+                    handleMediaClickAutoPlay(entry)
                 })
 
-                // أحدث المسلسلات
-                binding.recyclerLatestSeries.layoutManager = GridLayoutManager(this@MainActivity, GRID_SPAN_COUNT)
+                binding.recyclerLatestSeries.layoutManager = GridLayoutManager(this@MainActivity, 4)
                 binding.recyclerLatestSeries.adapter = PosterAdapter(items = series.take(12), onClick = { entry ->
-                    handleMediaClick(entry)
+                    handleMediaClickAutoPlay(entry)
                 })
 
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "خطأ في تحميل لوحة التحكم: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@MainActivity, "خطأ في التحميل: ${e.message}", Toast.LENGTH_LONG).show()
             } finally {
                 binding.progressBar.visibility = View.GONE
             }
@@ -369,13 +401,9 @@ class MainActivity : AppCompatActivity() {
     private fun displayMedia(items: List<MediaEntry>) {
         allMediaItems.clear()
         allMediaItems.addAll(items)
-        if (items.isEmpty()) {
-            Toast.makeText(this, R.string.no_channels_found, Toast.LENGTH_SHORT).show()
-        }
-        updateAdapter(items)
+        updateCategoriesChips(items)
+        filterItems("")
     }
-
-    // ─── أدوات مساعدة ────────────────────────────────────────────────────────
 
     private fun requireCreds(): Triple<String, String, String>? {
         val s = server; val u = username; val p = password
@@ -388,7 +416,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun openPlayer(name: String, url: String, id: String? = null) {
         val streamId = id ?: url
-        // استكمال المشاهدة تلقائيًا: إن وُجد تقدّم محفوظ لنفس العنصر، نبدأ منه مباشرة
         val savedPosition = watchHistoryManager.getHistory().find { it.id == streamId }?.position ?: 0L
         val intent = Intent(this, PlayerActivity::class.java).apply {
             putExtra(PlayerActivity.EXTRA_STREAM_URL,      url)
@@ -398,8 +425,6 @@ class MainActivity : AppCompatActivity() {
         }
         startActivity(intent)
     }
-
-    // ─── تحميل قوائم يدوية ───────────────────────────────────────────────────
 
     private fun loadManualPlaylist(url: String) {
         binding.progressBar.visibility = View.VISIBLE
@@ -443,12 +468,10 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.no_channels_found, Toast.LENGTH_SHORT).show()
             return
         }
-        binding.manualLayout.visibility    = View.GONE
-        binding.recyclerContent.visibility = View.VISIBLE
-        binding.recyclerContent.adapter = ChannelAdapter(channels) { channel ->
-            checkParentalLock(channel.groupTitle) {
-                openPlayer(channel.name, channel.url)
-            }
+        val entries = channels.map {
+            MediaEntry(id = it.url, title = it.name, imageUrl = it.logoUrl, playUrl = it.url, groupTitle = it.groupTitle, isSeries = false)
         }
+        binding.splitScreenLayout.visibility = View.VISIBLE
+        displayMedia(entries)
     }
 }

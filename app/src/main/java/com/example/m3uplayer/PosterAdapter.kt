@@ -1,6 +1,7 @@
 package com.example.m3uplayer
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -25,7 +26,19 @@ class PosterAdapter(
         val item = items[position]
         holder.binding.textPosterTitle.text = item.title
 
-        Glide.with(holder.binding.root.context)
+        val context = holder.binding.root.context
+        val historyManager = WatchHistoryManager(context)
+        val historyItem = historyManager.getHistory().find { it.id == item.id }
+
+        if (historyItem != null && historyItem.duration > 0) {
+            val percent = ((historyItem.position * 100) / historyItem.duration).toInt()
+            holder.binding.progressWatched.visibility = View.VISIBLE
+            holder.binding.progressWatched.progress = percent.coerceIn(0, 100)
+        } else {
+            holder.binding.progressWatched.visibility = View.GONE
+        }
+
+        Glide.with(context)
             .load(item.imageUrl)
             .transition(DrawableTransitionOptions.withCrossFade())
             .placeholder(android.R.drawable.ic_menu_gallery)

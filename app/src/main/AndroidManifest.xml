@@ -15,7 +15,7 @@
 
         <activity
             android:name=".SplashActivity"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="sensorLandscape"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -25,23 +25,23 @@
 
         <activity
             android:name=".LoginActivity"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="sensorLandscape"
             android:exported="false">
         </activity>
 
         <activity
             android:name=".MainActivity"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="sensorLandscape"
             android:exported="false" />
 
         <activity
             android:name=".SeriesDetailActivity"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="sensorLandscape"
             android:exported="false" />
 
         <activity
             android:name=".PlayerActivity"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="sensorLandscape"
             android:exported="false"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:supportsPictureInPicture="true"
@@ -49,12 +49,12 @@
 
         <activity
             android:name=".SettingsActivity"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="sensorLandscape"
             android:exported="false" />
 
         <activity
             android:name=".CustomGroupsActivity"
-            android:screenOrientation="fullSensor"
+            android:screenOrientation="sensorLandscape"
             android:exported="false" />
     </application>
 
