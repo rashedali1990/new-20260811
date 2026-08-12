@@ -212,105 +212,65 @@
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
-        <!-- Split-Screen Layout for Live, Movies, Series (Left: Player Preview, Right: List + Search + STT + Categories) -->
+        <!-- Full-Screen Content Layout for Live, Movies, Series, Favorites -->
         <LinearLayout
             android:id="@+id/splitScreenLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="horizontal"
+            android:orientation="vertical"
             android:visibility="gone"
-            android:weightSum="2">
+            android:padding="16dp">
 
-            <!-- Left Side: Player Preview Screen -->
-            <FrameLayout
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:background="#000000">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="12dp">
 
-                <androidx.media3.ui.PlayerView
-                    android:id="@+id/previewPlayerView"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    app:use_controller="true"
-                    app:show_buffering="always" />
+                <androidx.appcompat.widget.SearchView
+                    android:id="@+id/categorySearchView"
+                    android:layout_width="0dp"
+                    android:layout_height="48dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_search"
+                    android:iconifiedByDefault="false"
+                    android:queryHint="بحث في الفئة الحالية أو الترجمة الصوتية (STT)..."
+                    android:theme="@style/ThemeOverlay.AppCompat.Dark" />
 
-                <TextView
-                    android:id="@+id/previewTitleText"
+                <ImageButton
+                    android:id="@+id/buttonCategoryStt"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="10dp"
+                    android:background="@drawable/bg_icon_button"
+                    android:contentDescription="بحث صوتي وترجمة فورية (STT)"
+                    android:padding="12dp"
+                    android:src="@android:drawable/ic_btn_speak_now"
+                    android:tint="@color/text_primary" />
+            </LinearLayout>
+
+            <!-- Category Filter Horizontal Scroll -->
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:layout_marginBottom="12dp">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupCategories"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="top|start"
-                    android:layout_margin="16dp"
-                    android:background="@drawable/bg_eyebrow"
-                    android:paddingStart="12dp"
-                    android:paddingTop="6dp"
-                    android:paddingEnd="12dp"
-                    android:paddingBottom="6dp"
-                    android:text="اضغط على أي عنصر للتشغيل الفوري"
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-            </FrameLayout>
+                    app:singleSelection="true"
+                    app:selectionRequired="true" />
+            </HorizontalScrollView>
 
-            <!-- Right Side: Search, STT, Categories, and List -->
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerContent"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
                 android:layout_weight="1"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginBottom="8dp">
-
-                    <androidx.appcompat.widget.SearchView
-                        android:id="@+id/categorySearchView"
-                        android:layout_width="0dp"
-                        android:layout_height="44dp"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_search"
-                        android:iconifiedByDefault="false"
-                        android:queryHint="بحث في الفئة الحالية..."
-                        android:theme="@style/ThemeOverlay.AppCompat.Dark" />
-
-                    <ImageButton
-                        android:id="@+id/buttonCategoryStt"
-                        android:layout_width="44dp"
-                        android:layout_height="44dp"
-                        android:layout_marginStart="8dp"
-                        android:background="@drawable/bg_icon_button"
-                        android:contentDescription="بحث صوتي وترجمة فورية (STT)"
-                        android:padding="10dp"
-                        android:src="@android:drawable/ic_btn_speak_now"
-                        android:tint="@color/text_primary" />
-                </LinearLayout>
-
-                <!-- Category Filter Spinner / Horizontal Scroll -->
-                <HorizontalScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:scrollbars="none"
-                    android:layout_marginBottom="8dp">
-
-                    <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/chipGroupCategories"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        app:singleSelection="true"
-                        app:selectionRequired="true" />
-                </HorizontalScrollView>
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recyclerContent"
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:clipToPadding="false" />
-            </LinearLayout>
+                android:clipToPadding="false" />
         </LinearLayout>
     </FrameLayout>
 

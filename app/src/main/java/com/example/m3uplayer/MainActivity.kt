@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
     private var currentCategories = listOf<String>()
     private var selectedCategory: String = "الكل"
 
-    private var previewPlayer: ExoPlayer? = null
+    // Preview player removed as requested
 
     private val voiceSearchLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -125,9 +125,7 @@ class MainActivity : AppCompatActivity() {
         binding.searchView.setOnQueryTextListener(globalSearchListener)
         binding.categorySearchView.setOnQueryTextListener(globalSearchListener)
 
-        previewPlayer = ExoPlayer.Builder(this).build().also {
-            binding.previewPlayerView.player = it
-        }
+        // Preview player initialization removed
 
         intent.getStringExtra("extra_manual_url")?.let { url ->
             loadManualPlaylist(url)
@@ -179,7 +177,6 @@ class MainActivity : AppCompatActivity() {
             0 -> {
                 binding.dashboardLayout.visibility = View.VISIBLE
                 loadDashboard()
-                stopPreviewPlayer()
             }
             1 -> {
                 binding.splitScreenLayout.visibility = View.VISIBLE
@@ -200,13 +197,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun stopPreviewPlayer() {
-        previewPlayer?.stop()
-    }
-
     override fun onDestroy() {
         super.onDestroy()
-        previewPlayer?.release()
     }
 
     private fun filterItems(query: String?) {
@@ -291,12 +283,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 startActivity(intent)
             } else if (!entry.playUrl.isNullOrEmpty()) {
-                binding.previewTitleText.text = "يعمل الآن: ${entry.title}"
-                previewPlayer?.setMediaItem(MediaItem.fromUri(entry.playUrl!!))
-                previewPlayer?.prepare()
-                previewPlayer?.play()
-                
-                // Open full screen player automatically on click as requested by user
                 openPlayer(entry.title, entry.playUrl!!, entry.id)
             }
         }
