@@ -22,6 +22,7 @@ import java.io.InputStreamReader
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.common.MediaItem
 
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class MainActivity : AppCompatActivity() {
 
     companion object {
