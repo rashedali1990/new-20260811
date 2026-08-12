@@ -66,6 +66,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (!isGranted) {
+            Toast.makeText(this, "يلزم السماح بالوصول للميكروفون لاستخدام البحث الصوتي", Toast.LENGTH_LONG).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -143,12 +151,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun launchVoiceSearch() {
-        val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "تحدث للبحث الفوري أو الترجمة...")
+        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+            requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+            return
         }
-        voiceSearchLauncher.launch(intent)
+        try {
+            val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                    android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "ar-SA")
+                putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "تحدث للبحث الفوري أو الترجمة...")
+            }
+            voiceSearchLauncher.launch(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "التعرف الصوتي غير متوفر على هذا الجهاز", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private var currentTab = 0
@@ -278,6 +295,8 @@ class MainActivity : AppCompatActivity() {
                 previewPlayer?.setMediaItem(MediaItem.fromUri(entry.playUrl!!))
                 previewPlayer?.prepare()
                 previewPlayer?.play()
+                
+                // Open full screen player automatically on click as requested by user
                 openPlayer(entry.title, entry.playUrl!!, entry.id)
             }
         }
