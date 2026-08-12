@@ -1,16 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1A1A2E</color>
+    <color name="ic_launcher_background">#090A0F</color>
 
-    <!-- Dark Theme Colors -->
-    <color name="primary_dark">#1F1F1F</color>
-    <color name="background_dark">#121212</color>
-    <color name="surface_dark">#2C2C2C</color>
-    <color name="text_dark">#FFFFFF</color>
+    <color name="background_main">#090A0F</color>
+    <color name="background_raised">#11131B</color>
+    <color name="surface_dark">#181B25</color>
+    <color name="surface_high">#222633</color>
+    <color name="surface_muted">#151821</color>
+    <color name="stroke">#303544</color>
 
-    <!-- Light Theme Colors -->
-    <color name="primary_light">#F5F5F5</color>
-    <color name="background_light">#FFFFFF</color>
-    <color name="surface_light">#EEEEEE</color>
-    <color name="text_light">#000000</color>
+    <color name="brand_primary">#FF6144</color>
+    <color name="brand_primary_dark">#D94831</color>
+    <color name="brand_secondary">#8176FF</color>
+    <color name="brand_soft">#3A2525</color>
+    <color name="rating_gold">#FFC857</color>
+
+    <color name="text_primary">#F8F9FC</color>
+    <color name="text_secondary">#B6BBC8</color>
+    <color name="text_muted">#7E8596</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    <color name="scrim_dark">#D9090A0F</color>
+
+    <!-- Backward-compatible names used by legacy layouts. -->
+    <color name="primary_dark">#181B25</color>
+    <color name="background_dark">#090A0F</color>
+    <color name="text_dark">#F8F9FC</color>
+    <color name="primary_light">#181B25</color>
+    <color name="background_light">#090A0F</color>
+    <color name="surface_light">#181B25</color>
+    <color name="text_light">#F8F9FC</color>
 </resources>

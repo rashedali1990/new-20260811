@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_USERNAME   = "extra_username"
         const val EXTRA_PASSWORD   = "extra_password"
         const val EXTRA_PROFILE_ID = "extra_profile_id"
-        const val GRID_SPAN_COUNT  = 4
+        const val GRID_SPAN_COUNT  = 3
     }
 
     private lateinit var binding: ActivityMainBinding

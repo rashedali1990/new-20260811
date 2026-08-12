@@ -1,46 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:layout_width="140dp"
-    android:layout_height="wrap_content"
-    android:layout_margin="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="4dp">
+    style="@style/Widget.M3UPlayer.Card"
+    android:layout_width="188dp"
+    android:layout_height="132dp"
+    android:layout_marginEnd="10dp"
+    app:cardCornerRadius="18dp">
 
-    <LinearLayout
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_height="match_parent">
 
-        <RelativeLayout
+        <ImageView
+            android:id="@+id/imageContinue"
             android:layout_width="match_parent"
-            android:layout_height="80dp">
-            <ImageView
-                android:id="@+id/imageContinue"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:src="@android:drawable/ic_menu_gallery" />
-            <ProgressBar
-                android:id="@+id/progressContinue"
-                style="?android:attr/progressBarStyleHorizontal"
-                android:layout_width="match_parent"
-                android:layout_height="4dp"
-                android:layout_alignParentBottom="true"
-                android:progressDrawable="@android:color/holo_blue_bright" />
-        </RelativeLayout>
+            android:layout_height="match_parent"
+            android:contentDescription="محتوى قيد المتابعة"
+            android:scaleType="centerCrop" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/poster_scrim" />
 
         <TextView
             android:id="@+id/textContinueTitle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="8dp"
-            android:text="Continue Watching"
-            android:textColor="#FFFFFF"
-            android:textSize="12sp"
-            android:gravity="center"
+            android:layout_gravity="bottom"
+            android:ellipsize="end"
             android:maxLines="1"
-            android:ellipsize="end" />
-    </LinearLayout>
+            android:paddingStart="11dp"
+            android:paddingTop="18dp"
+            android:paddingEnd="11dp"
+            android:paddingBottom="15dp"
+            android:text="Continue Watching"
+            android:textColor="@color/text_primary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+
+        <ProgressBar
+            android:id="@+id/progressContinue"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="4dp"
+            android:layout_gravity="bottom"
+            android:indeterminateOnly="false"
+            android:progressDrawable="@android:drawable/progress_horizontal"
+            android:progressTint="@color/brand_primary" />
+    </FrameLayout>
 </com.google.android.material.card.MaterialCardView>
