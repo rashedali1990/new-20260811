@@ -33,7 +33,7 @@ object XtreamClient {
      * تحديث إعدادات الشبكة (بروكسي اختياري).
      * يُستدعى من SettingsActivity عند تغيير إعدادات الملف التعريفي.
      */
-    fun updateNetworkSettings(proxyHost: String?, proxyPort: Int, dnsServer: String?) {
+    fun updateNetworkSettings(proxyHost: String?, proxyPort: Int) {
         val builder = OkHttpClient.Builder()
             .dns(AdGuardDns())
             .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
@@ -48,7 +48,7 @@ object XtreamClient {
     }
 
     fun updateProxy(host: String?, port: Int) {
-        updateNetworkSettings(host, port, null)
+        updateNetworkSettings(host, port)
     }
 
     private fun clean(url: String) = url.trim().trimEnd('/')
