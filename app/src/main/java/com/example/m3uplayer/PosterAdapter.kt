@@ -9,7 +9,8 @@ import com.example.m3uplayer.databinding.ItemMediaPosterBinding
 
 class PosterAdapter(
     private val items: List<MediaEntry>,
-    private val onClick: (MediaEntry) -> Unit
+    private val onClick: (MediaEntry) -> Unit,
+    private val onLongClick: ((MediaEntry) -> Unit)? = null
 ) : RecyclerView.Adapter<PosterAdapter.PosterViewHolder>() {
 
     inner class PosterViewHolder(val binding: ItemMediaPosterBinding) :
@@ -32,6 +33,9 @@ class PosterAdapter(
             .into(holder.binding.imagePoster)
 
         holder.binding.root.setOnClickListener { onClick(item) }
+        onLongClick?.let { callback ->
+            holder.binding.root.setOnLongClickListener { callback(item); true }
+        }
     }
 
     override fun getItemCount(): Int = items.size

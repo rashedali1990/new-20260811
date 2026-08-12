@@ -26,6 +26,7 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_USERNAME   = "extra_username"
         const val EXTRA_PASSWORD   = "extra_password"
         const val EXTRA_PROFILE_ID = "extra_profile_id"
+        const val GRID_SPAN_COUNT  = 4
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -145,7 +146,10 @@ class MainActivity : AppCompatActivity() {
 
     // ─── عرض التبويبات ───────────────────────────────────────────────────────
 
+    private var currentTab = 0
+
     private fun showTab(position: Int) {
+        currentTab = position
         // إخفاء كل المناطق أولاً
         binding.dashboardLayout.visibility = View.GONE
         binding.recyclerContent.visibility = View.GONE
@@ -169,22 +173,39 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateAdapter(items: List<MediaEntry>) {
-        binding.recyclerContent.adapter = MediaAdapter(
-            items          = items,
-            onClick        = { entry -> handleMediaClick(entry) },
-            onFavoriteClick = { entry ->
-                favoritesManager.toggleFavorite(entry.id)
-                if (favoritesManager.isFavorite(entry.id)) {
-                    notificationHelper.sendReminderNotification(
-                        title     = entry.title,
-                        message   = "تم إضافة ${entry.title} إلى المفضلة",
-                        streamUrl = entry.playUrl ?: ""
-                    )
+        if (currentTab == 2 || currentTab == 3) {
+            // الأفلام والمسلسلات: شبكة بوسترات (4 أعمدة أفقيًا وعموديًا)
+            binding.recyclerContent.layoutManager = GridLayoutManager(this, GRID_SPAN_COUNT)
+            binding.recyclerContent.adapter = PosterAdapter(
+                items       = items,
+                onClick     = { entry -> handleMediaClick(entry) },
+                onLongClick = { entry ->
+                    favoritesManager.toggleFavorite(entry.id)
+                    val messageRes = if (favoritesManager.isFavorite(entry.id))
+                        R.string.added_to_favorites else R.string.removed_from_favorites
+                    Toast.makeText(this, messageRes, Toast.LENGTH_SHORT).show()
                 }
-                filterItems(binding.searchView.query.toString())
-            },
-            isFavorite = { entry -> favoritesManager.isFavorite(entry.id) }
-        )
+            )
+        } else {
+            // البث المباشر: قائمة نصية (تدعم زر المفضلة المباشر)
+            binding.recyclerContent.layoutManager = LinearLayoutManager(this)
+            binding.recyclerContent.adapter = MediaAdapter(
+                items          = items,
+                onClick        = { entry -> handleMediaClick(entry) },
+                onFavoriteClick = { entry ->
+                    favoritesManager.toggleFavorite(entry.id)
+                    if (favoritesManager.isFavorite(entry.id)) {
+                        notificationHelper.sendReminderNotification(
+                            title     = entry.title,
+                            message   = "تم إضافة ${entry.title} إلى المفضلة",
+                            streamUrl = entry.playUrl ?: ""
+                        )
+                    }
+                    filterItems(binding.searchView.query.toString())
+                },
+                isFavorite = { entry -> favoritesManager.isFavorite(entry.id) }
+            )
+        }
     }
 
     // ─── معالجة النقر على عنصر ────────────────────────────────────────────────
@@ -202,7 +223,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 startActivity(intent)
             } else if (entry.playUrl != null) {
-                openPlayer(entry.title, entry.playUrl)
+                openPlayer(entry.title, entry.playUrl, entry.id)
             }
         }
     }
@@ -253,7 +274,7 @@ class MainActivity : AppCompatActivity() {
                 val history = watchHistoryManager.getHistory().take(3)
                 binding.recyclerContinueWatching.adapter = ContinueWatchingAdapter(history) { item ->
                     if (!item.url.isNullOrEmpty()) {
-                        openPlayer(item.title, item.url)
+                        openPlayer(item.title, item.url, item.id)
                     } else {
                         Toast.makeText(
                             this@MainActivity,
@@ -275,14 +296,13 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 // أحدث الأفلام
-                val spanCount = calculateSpanCount()
-                binding.recyclerLatestMovies.layoutManager = GridLayoutManager(this@MainActivity, spanCount)
+                binding.recyclerLatestMovies.layoutManager = GridLayoutManager(this@MainActivity, GRID_SPAN_COUNT)
                 binding.recyclerLatestMovies.adapter = PosterAdapter(movies.take(12)) { entry ->
                     handleMediaClick(entry)
                 }
 
                 // أحدث المسلسلات
-                binding.recyclerLatestSeries.layoutManager = GridLayoutManager(this@MainActivity, spanCount)
+                binding.recyclerLatestSeries.layoutManager = GridLayoutManager(this@MainActivity, GRID_SPAN_COUNT)
                 binding.recyclerLatestSeries.adapter = PosterAdapter(series.take(12)) { entry ->
                     handleMediaClick(entry)
                 }
@@ -357,16 +377,6 @@ class MainActivity : AppCompatActivity() {
 
     // ─── أدوات مساعدة ────────────────────────────────────────────────────────
 
-    private fun calculateSpanCount(): Int {
-        val screenWidth = resources.displayMetrics.widthPixels
-        return when {
-            screenWidth >= 1200 -> 5
-            screenWidth >= 800  -> 4
-            screenWidth >= 600  -> 3
-            else                -> 2
-        }
-    }
-
     private fun requireCreds(): Triple<String, String, String>? {
         val s = server; val u = username; val p = password
         if (s.isNullOrEmpty() || u.isNullOrEmpty() || p.isNullOrEmpty()) {
@@ -376,10 +386,15 @@ class MainActivity : AppCompatActivity() {
         return Triple(s, u, p)
     }
 
-    private fun openPlayer(name: String, url: String) {
+    private fun openPlayer(name: String, url: String, id: String? = null) {
+        val streamId = id ?: url
+        // استكمال المشاهدة تلقائيًا: إن وُجد تقدّم محفوظ لنفس العنصر، نبدأ منه مباشرة
+        val savedPosition = watchHistoryManager.getHistory().find { it.id == streamId }?.position ?: 0L
         val intent = Intent(this, PlayerActivity::class.java).apply {
-            putExtra(PlayerActivity.EXTRA_STREAM_URL,  url)
-            putExtra(PlayerActivity.EXTRA_STREAM_NAME, name)
+            putExtra(PlayerActivity.EXTRA_STREAM_URL,      url)
+            putExtra(PlayerActivity.EXTRA_STREAM_NAME,     name)
+            putExtra(PlayerActivity.EXTRA_STREAM_ID,       streamId)
+            putExtra(PlayerActivity.EXTRA_START_POSITION,  savedPosition)
         }
         startActivity(intent)
     }

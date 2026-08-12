@@ -45,10 +45,10 @@ class WatchHistoryManager(context: Context) {
             list.add(WatchHistory(
                 id = obj.getString("id"),
                 title = obj.getString("title"),
-                imageUrl = obj.optString("imageUrl", null),
+                imageUrl = obj.optString("imageUrl"),
                 position = obj.getLong("position"),
                 duration = obj.getLong("duration"),
-                url = obj.optString("url", null)
+                url = obj.optString("url")
             ))
         }
         return list

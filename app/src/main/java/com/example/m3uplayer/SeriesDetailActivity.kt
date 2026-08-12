@@ -23,6 +23,7 @@ class SeriesDetailActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySeriesDetailBinding
     private lateinit var favoritesManager: FavoritesManager
+    private lateinit var historyManager: WatchHistoryManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +31,7 @@ class SeriesDetailActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         favoritesManager = FavoritesManager(this)
+        historyManager   = WatchHistoryManager(this)
 
         val server     = intent.getStringExtra(EXTRA_SERVER)!!
         val username   = intent.getStringExtra(EXTRA_USERNAME)!!
@@ -58,9 +60,13 @@ class SeriesDetailActivity : AppCompatActivity() {
                     items          = episodes,
                     onClick        = { episode ->
                         if (episode.playUrl != null) {
+                            val savedPosition = historyManager.getHistory()
+                                .find { it.id == episode.id }?.position ?: 0L
                             val intent = Intent(this@SeriesDetailActivity, PlayerActivity::class.java).apply {
-                                putExtra(PlayerActivity.EXTRA_STREAM_URL,  episode.playUrl)
-                                putExtra(PlayerActivity.EXTRA_STREAM_NAME, "$seriesName - ${episode.title}")
+                                putExtra(PlayerActivity.EXTRA_STREAM_URL,      episode.playUrl)
+                                putExtra(PlayerActivity.EXTRA_STREAM_NAME,     "$seriesName - ${episode.title}")
+                                putExtra(PlayerActivity.EXTRA_STREAM_ID,       episode.id)
+                                putExtra(PlayerActivity.EXTRA_START_POSITION,  savedPosition)
                             }
                             startActivity(intent)
                         }

@@ -30,4 +30,14 @@
     <string name="settings">الإعدادات</string>
     <string name="save">حفظ</string>
     <string name="cancel">إلغاء</string>
+
+    <string name="player_settings">إعدادات المشغل</string>
+    <string name="quality_selection">جودة الفيديو</string>
+    <string name="audio_track">مسار الصوت</string>
+    <string name="subtitle_track">الترجمة</string>
+    <string name="track_auto">تلقائي</string>
+    <string name="track_off">إيقاف</string>
+    <string name="no_tracks_available">لا تتوفر مسارات بديلة لهذا المحتوى</string>
+    <string name="added_to_favorites">أُضيف إلى المفضلة</string>
+    <string name="removed_from_favorites">أُزيل من المفضلة</string>
 </resources>

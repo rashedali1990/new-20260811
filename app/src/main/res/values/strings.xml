@@ -30,4 +30,14 @@
     <string name="settings">Settings</string>
     <string name="save">Save</string>
     <string name="cancel">Cancel</string>
+
+    <string name="player_settings">Player Settings</string>
+    <string name="quality_selection">Video Quality</string>
+    <string name="audio_track">Audio Track</string>
+    <string name="subtitle_track">Subtitles</string>
+    <string name="track_auto">Automatic</string>
+    <string name="track_off">Off</string>
+    <string name="no_tracks_available">No alternative tracks available for this content</string>
+    <string name="added_to_favorites">Added to favorites</string>
+    <string name="removed_from_favorites">Removed from favorites</string>
 </resources>

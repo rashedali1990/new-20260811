@@ -105,10 +105,10 @@ object XtreamClient {
             MediaEntry(
                 id         = id,
                 title      = item.optString("name", "بدون اسم"),
-                subtitle   = item.optString("category_id", null),
+                subtitle   = item.optString("category_id"),
                 playUrl    = liveStreamUrl(server, username, password, id),
-                groupTitle = item.optString("category_name", null),
-                imageUrl   = item.optString("stream_icon", null).takeIf { it.isNotEmpty() }
+                groupTitle = item.optString("category_name"),
+                imageUrl   = item.optString("stream_icon").takeIf { it.isNotEmpty() }
             )
         }
     }
@@ -124,8 +124,8 @@ object XtreamClient {
                 id         = id,
                 title      = item.optString("name", "بدون اسم"),
                 playUrl    = vodStreamUrl(server, username, password, id, ext),
-                groupTitle = item.optString("category_name", null),
-                imageUrl   = item.optString("stream_icon", null).takeIf { it.isNotEmpty() }
+                groupTitle = item.optString("category_name"),
+                imageUrl   = item.optString("stream_icon").takeIf { it.isNotEmpty() }
             )
         }
     }
@@ -139,7 +139,7 @@ object XtreamClient {
                 id       = item.optString("series_id"),
                 title    = item.optString("name", "بدون اسم"),
                 isSeries = true,
-                imageUrl = item.optString("stream_icon", null).takeIf { it.isNotEmpty() }
+                imageUrl = item.optString("stream_icon").takeIf { it.isNotEmpty() }
             )
         }
     }

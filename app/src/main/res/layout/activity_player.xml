@@ -21,6 +21,20 @@
         android:layout_margin="16dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:src="@android:drawable/ic_menu_share"
+        android:contentDescription="@string/settings"
+        app:tint="#FFFFFF"
+        android:alpha="0.6" />
+
+    <ImageButton
+        android:id="@+id/buttonPlayerSettings"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_alignParentTop="true"
+        android:layout_toLeftOf="@id/buttonExternalPlayer"
+        android:layout_margin="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@android:drawable/ic_menu_manage"
+        android:contentDescription="@string/player_settings"
         app:tint="#FFFFFF"
         android:alpha="0.6" />
 
