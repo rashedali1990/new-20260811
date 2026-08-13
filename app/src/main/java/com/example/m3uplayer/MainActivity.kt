@@ -110,9 +110,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        binding.buttonVoiceSearch.setOnClickListener {
-            launchVoiceSearch()
-        }
+        // Voice search button removed from home toolbar
 
         binding.buttonCategoryStt.setOnClickListener {
             launchVoiceSearch()
@@ -122,7 +120,7 @@ class MainActivity : AppCompatActivity() {
             override fun onQueryTextSubmit(query: String?): Boolean { filterItems(query); return true }
             override fun onQueryTextChange(newText: String?): Boolean { filterItems(newText); return true }
         }
-        binding.searchView.setOnQueryTextListener(globalSearchListener)
+        // Home search view removed
         binding.categorySearchView.setOnQueryTextListener(globalSearchListener)
 
         // Preview player initialization removed
@@ -235,8 +233,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateAdapter(items: List<MediaEntry>) {
+        // Movies (2) and Series (3) use top-aligned grid view
         if (currentTab == 2 || currentTab == 3) {
-            binding.recyclerContent.layoutManager = GridLayoutManager(this, 2)
+            binding.recyclerContent.layoutManager = GridLayoutManager(this, 3).apply {
+                spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+                    override fun getSpanSize(position: Int): Int = 1
+                }
+            }
             binding.recyclerContent.adapter = PosterAdapter(
                 items       = items,
                 onClick     = { entry -> handleMediaClickAutoPlay(entry) },
@@ -249,6 +252,7 @@ class MainActivity : AppCompatActivity() {
                 }
             )
         } else {
+            // Live TV (1) and Favorites (4) use detailed server-categorized list view
             binding.recyclerContent.layoutManager = LinearLayoutManager(this)
             binding.recyclerContent.adapter = MediaAdapter(
                 items          = items,

@@ -23,7 +23,8 @@ class MediaAdapter(
     override fun onBindViewHolder(holder: MediaViewHolder, position: Int) {
         val entry = items[position]
         holder.binding.textChannelName.text = entry.title
-        holder.binding.textChannelGroup.text = entry.subtitle ?: if (entry.isSeries) "مسلسل - اضغط لعرض الحلقات" else ""
+        val categoryText = if (!entry.groupTitle.isNullOrBlank()) "تصنيف السيرفر: ${entry.groupTitle}" else "بث مباشر"
+        holder.binding.textChannelGroup.text = entry.subtitle ?: categoryText
 
         holder.binding.buttonFavorite.setImageResource(
             if (isFavorite(entry)) android.R.drawable.btn_star_big_on else android.R.drawable.btn_star_big_off

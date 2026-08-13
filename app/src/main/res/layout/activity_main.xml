@@ -10,11 +10,11 @@
     <LinearLayout
         android:id="@+id/toolbar"
         android:layout_width="0dp"
-        android:layout_height="64dp"
+        android:layout_height="56dp"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
@@ -30,36 +30,24 @@
                 android:layout_height="wrap_content"
                 android:text="RASHED PLAYER"
                 android:textColor="@color/text_primary"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="مساحتك السينمائية والتلفزيونية"
+                android:text="منصة البث الذكية"
                 android:textColor="@color/text_muted"
-                android:textSize="11sp" />
+                android:textSize="10sp" />
         </LinearLayout>
 
         <ImageButton
-            android:id="@+id/buttonVoiceSearch"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/bg_icon_button"
-            android:contentDescription="البحث الصوتي"
-            android:padding="10dp"
-            android:src="@android:drawable/ic_btn_speak_now"
-            android:tint="@color/text_primary" />
-
-        <ImageButton
             android:id="@+id/buttonSettings"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
             android:background="@drawable/bg_icon_button"
             android:contentDescription="الإعدادات"
-            android:padding="10dp"
+            android:padding="8dp"
             android:src="@android:drawable/ic_menu_manage"
             android:tint="@color/text_primary" />
     </LinearLayout>
@@ -73,22 +61,22 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbar">
 
-        <!-- Dashboard Layout for Home Tab -->
+        <!-- Dashboard Layout for Home Tab (Clean, no search/mic) -->
         <androidx.core.widget.NestedScrollView
             android:id="@+id/dashboardLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
             android:fillViewport="true"
-            android:paddingBottom="18dp">
+            android:paddingBottom="16dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingStart="20dp"
-                android:paddingTop="6dp"
-                android:paddingEnd="20dp">
+                android:paddingStart="16dp"
+                android:paddingTop="8dp"
+                android:paddingEnd="16dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -108,16 +96,16 @@
                             android:layout_height="wrap_content"
                             android:text="مرحباً بك"
                             android:textColor="@color/text_primary"
-                            android:textSize="23sp"
+                            android:textSize="20sp"
                             android:textStyle="bold" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="3dp"
-                            android:text="اكتشف ما تريد مشاهدته اليوم"
+                            android:layout_marginTop="2dp"
+                            android:text="اختر المحتوى المفضل لديك للمشاهدة"
                             android:textColor="@color/text_secondary"
-                            android:textSize="12sp" />
+                            android:textSize="11sp" />
                     </LinearLayout>
 
                     <TextView
@@ -125,67 +113,49 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_eyebrow"
-                        android:maxWidth="112dp"
+                        android:maxWidth="100dp"
                         android:ellipsize="end"
-                        android:paddingStart="11dp"
-                        android:paddingTop="6dp"
-                        android:paddingEnd="11dp"
-                        android:paddingBottom="6dp"
+                        android:paddingStart="10dp"
+                        android:paddingTop="4dp"
+                        android:paddingEnd="10dp"
+                        android:paddingBottom="4dp"
                         android:textColor="@color/text_secondary"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="14dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <androidx.appcompat.widget.SearchView
-                        android:id="@+id/searchView"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:background="@drawable/bg_search"
-                        android:iconifiedByDefault="false"
-                        android:queryHint="ابحث عن فيلم، مسلسل أو قناة"
-                        android:theme="@style/ThemeOverlay.AppCompat.Dark" />
+                        android:textSize="11sp" />
                 </LinearLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="16dp"
                     android:text="استمر بالمشاهدة"
                     android:textColor="@color/text_primary"
-                    android:textSize="18sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerContinueWatching"
                     android:layout_width="match_parent"
-                    android:layout_height="140dp"
-                    android:layout_marginTop="8dp"
+                    android:layout_height="130dp"
+                    android:layout_marginTop="6dp"
                     android:clipToPadding="false"
                     android:orientation="horizontal"
-                    android:paddingEnd="12dp"
+                    android:paddingEnd="10dp"
                     app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="16dp"
                     android:text="أحدث الأفلام"
                     android:textColor="@color/text_primary"
-                    android:textSize="18sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerLatestMovies"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="6dp"
                     android:clipToPadding="false"
                     android:nestedScrollingEnabled="false"
                     app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
@@ -194,17 +164,17 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
+                    android:layout_marginTop="16dp"
                     android:text="مسلسلات تستحق المتابعة"
                     android:textColor="@color/text_primary"
-                    android:textSize="18sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerLatestSeries"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="6dp"
                     android:clipToPadding="false"
                     android:nestedScrollingEnabled="false"
                     app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
@@ -212,50 +182,50 @@
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
-        <!-- Full-Screen Content Layout for Live, Movies, Series, Favorites -->
+        <!-- General Interactive Content Layout (Live, Movies, Series, Favorites) with top search/STT and structured category/server panel -->
         <LinearLayout
             android:id="@+id/splitScreenLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:visibility="gone"
-            android:padding="16dp">
+            android:padding="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginBottom="12dp">
+                android:layout_marginBottom="8dp">
 
                 <androidx.appcompat.widget.SearchView
                     android:id="@+id/categorySearchView"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
+                    android:layout_height="42dp"
                     android:layout_weight="1"
                     android:background="@drawable/bg_search"
                     android:iconifiedByDefault="false"
-                    android:queryHint="بحث في الفئة الحالية أو الترجمة الصوتية (STT)..."
+                    android:queryHint="بحث في التصنيفات أو ترجمة صوتية (STT)..."
                     android:theme="@style/ThemeOverlay.AppCompat.Dark" />
 
                 <ImageButton
                     android:id="@+id/buttonCategoryStt"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="10dp"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:layout_marginStart="8dp"
                     android:background="@drawable/bg_icon_button"
                     android:contentDescription="بحث صوتي وترجمة فورية (STT)"
-                    android:padding="12dp"
+                    android:padding="10dp"
                     android:src="@android:drawable/ic_btn_speak_now"
                     android:tint="@color/text_primary" />
             </LinearLayout>
 
-            <!-- Category Filter Horizontal Scroll -->
+            <!-- Category Filter / Server Groups Bar -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:scrollbars="none"
-                android:layout_marginBottom="12dp">
+                android:layout_marginBottom="8dp">
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupCategories"
