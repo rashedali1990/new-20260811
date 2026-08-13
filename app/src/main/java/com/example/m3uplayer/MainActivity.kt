@@ -49,9 +49,7 @@ class MainActivity : AppCompatActivity() {
     private var currentCategories = listOf<String>()
     private var selectedCategory: String = "الكل"
 
-    private var speechRecognizer: android.speech.SpeechRecognizer? = null
-    private var speechRecognizerIntent: Intent? = null
-    private var isListening = false
+    // Speech recognizer moved to player as requested
 
     private val voiceSearchLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -113,19 +111,9 @@ class MainActivity : AppCompatActivity() {
 
         // Voice search button removed from home toolbar
 
-        binding.buttonCategoryStt.setOnClickListener {
-            launchVoiceSearch()
-        }
+        // Category STT button removed
 
-        val globalSearchListener = object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean { filterItems(query); return true }
-            override fun onQueryTextChange(newText: String?): Boolean { filterItems(newText); return true }
-        }
-        // Home search view removed
-        binding.categorySearchView.setOnQueryTextListener(globalSearchListener)
-
-        // Initialize continuous SpeechRecognizer
-        setupSpeechRecognizer()
+        // Search and continuous speech recognizer removed as requested
 
         intent.getStringExtra("extra_manual_url")?.let { url ->
             loadManualPlaylist(url)
@@ -197,84 +185,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSpeechRecognizer() {
-        if (android.speech.SpeechRecognizer.isRecognitionAvailable(this)) {
-            speechRecognizer = android.speech.SpeechRecognizer.createSpeechRecognizer(this)
-            speechRecognizerIntent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "ar-SA")
-                putExtra(android.speech.RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-            }
 
-            speechRecognizer?.setRecognitionListener(object : android.speech.RecognitionListener {
-                override fun onReadyForSpeech(params: Bundle?) {}
-                override fun onBeginningOfSpeech() {}
-                override fun onRmsChanged(rmsdB: Float) {}
-                override fun onBufferReceived(buffer: ByteArray?) {}
-                override fun onEndOfSpeech() {}
-                override fun onError(error: Int) {
-                    // Restart listening on error (e.g. no speech detected timeout)
-                    if (isListening) {
-                        android.os.Handler(mainLooper).postDelayed({
-                            startListening()
-                        }, 1000)
-                    }
-                }
-                override fun onResults(results: Bundle?) {
-                    val matches = results?.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION)
-                    if (!matches.isNullOrEmpty()) {
-                        val spokenText = matches[0]
-                        binding.categorySearchView.setQuery(spokenText, true)
-                        filterItems(spokenText)
-                    }
-                    // Restart listening for continuous voice recognition
-                    if (isListening) {
-                        startListening()
-                    }
-                }
-                override fun onPartialResults(partialResults: Bundle?) {}
-                override fun onEvent(eventType: Int, params: Bundle?) {}
-            })
-        }
-    }
-
-    private fun startListening() {
-        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            try {
-                isListening = true
-                speechRecognizer?.startListening(speechRecognizerIntent)
-            } catch (e: Exception) {
-                // Ignore if already listening
-            }
-        }
-    }
-
-    private fun stopListening() {
-        isListening = false
-        try {
-            speechRecognizer?.stopListening()
-        } catch (e: Exception) {}
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            startListening()
-        } else {
-            requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        stopListening()
-    }
 
     override fun onDestroy() {
         super.onDestroy()
-        stopListening()
-        speechRecognizer?.destroy()
-        speechRecognizer = null
     }
 
     private fun filterItems(query: String?) {

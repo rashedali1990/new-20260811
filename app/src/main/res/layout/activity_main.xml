@@ -61,7 +61,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbar">
 
-        <!-- Dashboard Layout for Home Tab (Clean, no search/mic) -->
+        <!-- Dashboard Layout for Home Tab -->
         <androidx.core.widget.NestedScrollView
             android:id="@+id/dashboardLayout"
             android:layout_width="match_parent"
@@ -182,7 +182,7 @@
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
-        <!-- General Interactive Content Layout (Live, Movies, Series, Favorites) with top search/STT and structured category/server panel -->
+        <!-- General Interactive Content Layout (Live, Movies, Series, Favorites) with Category Bar only -->
         <LinearLayout
             android:id="@+id/splitScreenLayout"
             android:layout_width="match_parent"
@@ -191,41 +191,12 @@
             android:visibility="gone"
             android:padding="12dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginBottom="8dp">
-
-                <androidx.appcompat.widget.SearchView
-                    android:id="@+id/categorySearchView"
-                    android:layout_width="0dp"
-                    android:layout_height="42dp"
-                    android:layout_weight="1"
-                    android:background="@drawable/bg_search"
-                    android:iconifiedByDefault="false"
-                    android:queryHint="بحث في التصنيفات أو ترجمة صوتية (STT)..."
-                    android:theme="@style/ThemeOverlay.AppCompat.Dark" />
-
-                <ImageButton
-                    android:id="@+id/buttonCategoryStt"
-                    android:layout_width="42dp"
-                    android:layout_height="42dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_icon_button"
-                    android:contentDescription="بحث صوتي وترجمة فورية (STT)"
-                    android:padding="10dp"
-                    android:src="@android:drawable/ic_btn_speak_now"
-                    android:tint="@color/text_primary" />
-            </LinearLayout>
-
             <!-- Category Filter / Server Groups Bar -->
             <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:scrollbars="none"
-                android:layout_marginBottom="8dp">
+                android:layout_marginBottom="12dp">
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupCategories"
