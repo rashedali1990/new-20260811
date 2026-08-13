@@ -61,7 +61,6 @@ class MainActivity : AppCompatActivity() {
                 ?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)
                 ?.getOrNull(0)
             spokenText?.let {
-                binding.searchView.setQuery(it, true)
                 binding.categorySearchView.setQuery(it, true)
                 filterItems(it)
             }
