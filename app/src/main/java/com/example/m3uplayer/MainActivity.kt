@@ -59,7 +59,6 @@ class MainActivity : AppCompatActivity() {
                 ?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)
                 ?.getOrNull(0)
             spokenText?.let {
-                binding.categorySearchView.setQuery(it, true)
                 filterItems(it)
             }
         }
@@ -216,7 +215,7 @@ class MainActivity : AppCompatActivity() {
                 setOnCheckedChangeListener { _, checked ->
                     if (checked) {
                         selectedCategory = cat
-                        filterItems(binding.categorySearchView.query.toString())
+                        filterItems("")
                     }
                 }
             }
@@ -259,7 +258,7 @@ class MainActivity : AppCompatActivity() {
                         )
                     }
                     if (currentTab == 4) loadFavorites()
-                    else filterItems(binding.categorySearchView.query.toString())
+                    else filterItems("")
                 },
                 isFavorite = { entry -> favoritesManager.isFavorite(entry.id) }
             )
