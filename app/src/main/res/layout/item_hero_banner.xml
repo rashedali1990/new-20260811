@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <ImageView
+        android:id="@+id/imageHeroBackdrop"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="عمل مميز"
+        android:scaleType="centerCrop" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/hero_scrim" />
+
+    <TextView
+        android:id="@+id/textHeroEyebrow"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="18dp"
+        android:layout_marginBottom="86dp"
+        android:background="@drawable/bg_eyebrow"
+        android:paddingStart="10dp"
+        android:paddingTop="4dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="4dp"
+        android:text="⭐ مميز"
+        android:textColor="@color/rating_gold"
+        android:textSize="11sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/textHeroTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="18dp"
+        android:layout_marginEnd="18dp"
+        android:layout_marginBottom="52dp"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:shadowColor="#CC000000"
+        android:shadowDx="0"
+        android:shadowDy="1"
+        android:shadowRadius="6"
+        android:text="عنوان العمل المميز"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:id="@+id/buttonHeroPlay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|start"
+        android:layout_marginStart="18dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/bg_icon_button"
+        android:backgroundTint="@color/brand_primary"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="18dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="8dp">
+
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:contentDescription="تشغيل"
+            android:src="@android:drawable/ic_media_play"
+            app:tint="#FFFFFF" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:text="مشاهدة الآن"
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+</FrameLayout>

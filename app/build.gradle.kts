@@ -62,4 +62,7 @@ dependencies {
 
     // Activity KTX for registerForActivityResult
     implementation("androidx.activity:activity-ktx:1.9.1")
+
+    // ViewPager2 للبانر المميز المتحرك (Hero Banner)
+    implementation("androidx.viewpager2:viewpager2:1.1.0")
 }

@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -31,6 +32,7 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_PASSWORD   = "extra_password"
         const val EXTRA_PROFILE_ID = "extra_profile_id"
         const val GRID_SPAN_COUNT  = 3
+        const val HERO_BANNER_INTERVAL_MS = 4500L
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -48,6 +50,10 @@ class MainActivity : AppCompatActivity() {
     private var allMediaItems = mutableListOf<MediaEntry>()
     private var currentCategories = listOf<String>()
     private var selectedCategory: String = "الكل"
+
+    // البانر المميز: تمرير تلقائي كل 4.5 ثانية
+    private val heroBannerHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var heroBannerRunnable: Runnable? = null
 
     // Speech recognizer moved to player as requested
 
@@ -188,6 +194,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        heroBannerRunnable?.let { heroBannerHandler.removeCallbacks(it) }
     }
 
     private fun filterItems(query: String?) {
@@ -340,6 +347,10 @@ class MainActivity : AppCompatActivity() {
                     handleMediaClickAutoPlay(entry)
                 })
 
+                // البانر المميز: أفضل 5 أعمال لها صورة (نخلط أفلامًا ومسلسلات)
+                val heroCandidates = (movies + series).filter { !it.imageUrl.isNullOrBlank() }.take(5)
+                setupHeroBanner(heroCandidates)
+
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "خطأ في التحميل: ${e.message}", Toast.LENGTH_LONG).show()
             } finally {
@@ -447,6 +458,73 @@ class MainActivity : AppCompatActivity() {
             putExtra(PlayerActivity.EXTRA_START_POSITION,  savedPosition)
         }
         startActivity(intent)
+    }
+
+    private fun setupHeroBanner(items: List<MediaEntry>) {
+        heroBannerRunnable?.let { heroBannerHandler.removeCallbacks(it) }
+
+        if (items.isEmpty()) {
+            binding.heroBannerPager.visibility = View.GONE
+            binding.heroBannerIndicators.visibility = View.GONE
+            return
+        }
+        binding.heroBannerPager.visibility = View.VISIBLE
+        binding.heroBannerIndicators.visibility = View.VISIBLE
+
+        binding.heroBannerPager.adapter = HeroBannerAdapter(items) { entry ->
+            handleMediaClickAutoPlay(entry)
+        }
+
+        // البدء من منتصف المدى الكبير حتى يمكن التمرير بلا "قفزة" مرئية عند إعادة اللف
+        val startPosition = (Int.MAX_VALUE / 2) - ((Int.MAX_VALUE / 2) % items.size)
+        binding.heroBannerPager.setCurrentItem(startPosition, false)
+
+        // مؤشرات النقاط أسفل البانر
+        binding.heroBannerIndicators.removeAllViews()
+        val dotSize   = (resources.displayMetrics.density * 6).toInt()
+        val dotMargin = (resources.displayMetrics.density * 3).toInt()
+        val dots = items.indices.map { index ->
+            View(this).apply {
+                layoutParams = LinearLayout.LayoutParams(dotSize, dotSize).apply {
+                    marginStart = dotMargin
+                    marginEnd   = dotMargin
+                }
+                setBackgroundResource(R.drawable.dot_indicator)
+                alpha = if (index == 0) 1f else 0.35f
+            }
+        }
+        dots.forEach { binding.heroBannerIndicators.addView(it) }
+
+        binding.heroBannerPager.registerOnPageChangeCallback(object :
+            androidx.viewpager2.widget.ViewPager2.OnPageChangeCallback() {
+            override fun onPageSelected(position: Int) {
+                val realIndex = position % items.size
+                dots.forEachIndexed { i, dot -> dot.alpha = if (i == realIndex) 1f else 0.35f }
+            }
+        })
+
+        startHeroBannerAutoScroll()
+    }
+
+    private fun startHeroBannerAutoScroll() {
+        heroBannerRunnable = Runnable {
+            val next = binding.heroBannerPager.currentItem + 1
+            binding.heroBannerPager.setCurrentItem(next, true)
+            heroBannerHandler.postDelayed(heroBannerRunnable!!, HERO_BANNER_INTERVAL_MS)
+        }
+        heroBannerHandler.postDelayed(heroBannerRunnable!!, HERO_BANNER_INTERVAL_MS)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        heroBannerRunnable?.let { heroBannerHandler.removeCallbacks(it) }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (binding.heroBannerPager.adapter != null && heroBannerRunnable != null) {
+            startHeroBannerAutoScroll()
+        }
     }
 
     private fun loadManualPlaylist(url: String) {
