@@ -16,8 +16,8 @@ object XtreamClient {
     private fun createDefaultClient(): OkHttpClient {
         return OkHttpClient.Builder()
             .dns(AdGuardDns())
-            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
             .build()
     }
 
@@ -36,8 +36,8 @@ object XtreamClient {
     fun updateNetworkSettings(proxyHost: String?, proxyPort: Int) {
         val builder = OkHttpClient.Builder()
             .dns(AdGuardDns())
-            .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
-            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
 
         if (!proxyHost.isNullOrBlank() && proxyPort > 0) {
             val proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress(proxyHost, proxyPort))
@@ -96,51 +96,122 @@ object XtreamClient {
     fun episodeStreamUrl(server: String, username: String, password: String, episodeId: String, ext: String): String =
         "${clean(server)}/series/$username/$password/$episodeId.$ext"
 
-    fun fetchLive(server: String, username: String, password: String): List<MediaEntry> {
+    // ─── التصنيفات (Categories) ──────────────────────────────────────────────
+    // أغلب سيرفرات Xtream Codes لا تُرجع "category_name" داخل قوائم البث نفسها،
+    // بل فقط "category_id"؛ يجب طلب قوائم التصنيفات بشكل منفصل ومطابقتها يدويًا.
+
+    private fun fetchCategoryMap(server: String, username: String, password: String, action: String): Map<String, String> {
+        return try {
+            val body = fetchJson(apiUrl(server, username, password, action))
+            val array = JSONArray(body)
+            (0 until array.length()).mapNotNull { i ->
+                try {
+                    val item = array.getJSONObject(i)
+                    val id = item.optString("category_id")
+                    val name = item.optString("category_name")
+                    if (id.isNotEmpty() && name.isNotEmpty()) id to name else null
+                } catch (e: Exception) {
+                    null
+                }
+            }.toMap()
+        } catch (e: Exception) {
+            emptyMap()
+        }
+    }
+
+    fun fetchLiveCategories(server: String, username: String, password: String): Map<String, String> =
+        fetchCategoryMap(server, username, password, "get_live_categories")
+
+    fun fetchVodCategories(server: String, username: String, password: String): Map<String, String> =
+        fetchCategoryMap(server, username, password, "get_vod_categories")
+
+    fun fetchSeriesCategories(server: String, username: String, password: String): Map<String, String> =
+        fetchCategoryMap(server, username, password, "get_series_categories")
+
+    // ─── قوائم المحتوى ───────────────────────────────────────────────────────
+    // نستخدم mapNotNull + try/catch لكل عنصر بمفرده: عنصر واحد تالف في استجابة
+    // الخادم لن يُسقط القائمة بأكملها بعد الآن (كان JSONException في عنصر واحد
+    // يوقف array.map{} فيُفرَّغ الكتالوج كله ويظهر خطأ عام بدل نتائج جزئية).
+
+    fun fetchLive(
+        server: String,
+        username: String,
+        password: String,
+        categories: Map<String, String> = emptyMap()
+    ): List<MediaEntry> {
         val body = fetchJson(apiUrl(server, username, password, "get_live_streams"))
         val array = JSONArray(body)
-        return (0 until array.length()).map { i ->
-            val item = array.getJSONObject(i)
-            val id = item.optString("stream_id")
-            MediaEntry(
-                id         = id,
-                title      = item.optString("name", "بدون اسم"),
-                subtitle   = item.optString("category_id"),
-                playUrl    = liveStreamUrl(server, username, password, id),
-                groupTitle = item.optString("category_name"),
-                imageUrl   = item.optString("stream_icon").takeIf { it.isNotEmpty() }
-            )
+        return (0 until array.length()).mapNotNull { i ->
+            try {
+                val item = array.getJSONObject(i)
+                val id = item.optString("stream_id")
+                val categoryId = item.optString("category_id")
+                MediaEntry(
+                    id         = id,
+                    title      = item.optString("name", "بدون اسم"),
+                    subtitle   = categoryId,
+                    playUrl    = liveStreamUrl(server, username, password, id),
+                    groupTitle = categories[categoryId]
+                        ?: item.optString("category_name").takeIf { it.isNotEmpty() },
+                    imageUrl   = item.optString("stream_icon").takeIf { it.isNotEmpty() }
+                )
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 
-    fun fetchVod(server: String, username: String, password: String): List<MediaEntry> {
+    fun fetchVod(
+        server: String,
+        username: String,
+        password: String,
+        categories: Map<String, String> = emptyMap()
+    ): List<MediaEntry> {
         val body = fetchJson(apiUrl(server, username, password, "get_vod_streams"))
         val array = JSONArray(body)
-        return (0 until array.length()).map { i ->
-            val item = array.getJSONObject(i)
-            val id  = item.optString("stream_id")
-            val ext = item.optString("container_extension", "mp4")
-            MediaEntry(
-                id         = id,
-                title      = item.optString("name", "بدون اسم"),
-                playUrl    = vodStreamUrl(server, username, password, id, ext),
-                groupTitle = item.optString("category_name"),
-                imageUrl   = item.optString("stream_icon").takeIf { it.isNotEmpty() }
-            )
+        return (0 until array.length()).mapNotNull { i ->
+            try {
+                val item = array.getJSONObject(i)
+                val id  = item.optString("stream_id")
+                val ext = item.optString("container_extension", "mp4")
+                val categoryId = item.optString("category_id")
+                MediaEntry(
+                    id         = id,
+                    title      = item.optString("name", "بدون اسم"),
+                    playUrl    = vodStreamUrl(server, username, password, id, ext),
+                    groupTitle = categories[categoryId]
+                        ?: item.optString("category_name").takeIf { it.isNotEmpty() },
+                    imageUrl   = item.optString("stream_icon").takeIf { it.isNotEmpty() }
+                )
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 
-    fun fetchSeriesList(server: String, username: String, password: String): List<MediaEntry> {
+    fun fetchSeriesList(
+        server: String,
+        username: String,
+        password: String,
+        categories: Map<String, String> = emptyMap()
+    ): List<MediaEntry> {
         val body = fetchJson(apiUrl(server, username, password, "get_series"))
         val array = JSONArray(body)
-        return (0 until array.length()).map { i ->
-            val item = array.getJSONObject(i)
-            MediaEntry(
-                id       = item.optString("series_id"),
-                title    = item.optString("name", "بدون اسم"),
-                isSeries = true,
-                imageUrl = item.optString("stream_icon").takeIf { it.isNotEmpty() }
-            )
+        return (0 until array.length()).mapNotNull { i ->
+            try {
+                val item = array.getJSONObject(i)
+                val categoryId = item.optString("category_id")
+                MediaEntry(
+                    id         = item.optString("series_id"),
+                    title      = item.optString("name", "بدون اسم"),
+                    isSeries   = true,
+                    groupTitle = categories[categoryId]
+                        ?: item.optString("category_name").takeIf { it.isNotEmpty() },
+                    imageUrl   = item.optString("stream_icon").takeIf { it.isNotEmpty() }
+                )
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 

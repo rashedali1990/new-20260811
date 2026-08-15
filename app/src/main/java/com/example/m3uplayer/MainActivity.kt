@@ -366,11 +366,12 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val items = withContext(Dispatchers.IO) {
-                    XtreamClient.fetchLive(creds.first, creds.second, creds.third)
+                    val categories = XtreamClient.fetchLiveCategories(creds.first, creds.second, creds.third)
+                    XtreamClient.fetchLive(creds.first, creds.second, creds.third, categories)
                 }
                 displayMedia(items)
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, getString(R.string.load_error, e.message), Toast.LENGTH_LONG).show()
+                showLoadErrorDialog(e)
             } finally {
                 binding.progressBar.visibility = View.GONE
             }
@@ -383,11 +384,12 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val items = withContext(Dispatchers.IO) {
-                    XtreamClient.fetchVod(creds.first, creds.second, creds.third)
+                    val categories = XtreamClient.fetchVodCategories(creds.first, creds.second, creds.third)
+                    XtreamClient.fetchVod(creds.first, creds.second, creds.third, categories)
                 }
                 displayMedia(items)
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, getString(R.string.load_error, e.message), Toast.LENGTH_LONG).show()
+                showLoadErrorDialog(e)
             } finally {
                 binding.progressBar.visibility = View.GONE
             }
@@ -400,11 +402,12 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val items = withContext(Dispatchers.IO) {
-                    XtreamClient.fetchSeriesList(creds.first, creds.second, creds.third)
+                    val categories = XtreamClient.fetchSeriesCategories(creds.first, creds.second, creds.third)
+                    XtreamClient.fetchSeriesList(creds.first, creds.second, creds.third, categories)
                 }
                 displayMedia(items)
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, getString(R.string.load_error, e.message), Toast.LENGTH_LONG).show()
+                showLoadErrorDialog(e)
             } finally {
                 binding.progressBar.visibility = View.GONE
             }
@@ -426,7 +429,7 @@ class MainActivity : AppCompatActivity() {
                 
                 displayMedia(favorites)
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "خطأ في تحميل المفضلة: ${e.message}", Toast.LENGTH_LONG).show()
+                showLoadErrorDialog(e)
             } finally {
                 binding.progressBar.visibility = View.GONE
             }
@@ -438,6 +441,14 @@ class MainActivity : AppCompatActivity() {
         allMediaItems.addAll(items)
         updateCategoriesChips(items)
         filterItems("")
+    }
+
+    private fun showLoadErrorDialog(e: Exception) {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("تعذّر تحميل المحتوى")
+            .setMessage(getString(R.string.load_error, e.message ?: "خطأ غير معروف"))
+            .setPositiveButton("حسنًا", null)
+            .show()
     }
 
     private fun requireCreds(): Triple<String, String, String>? {
