@@ -343,10 +343,12 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val movies = withContext(Dispatchers.IO) {
-                    XtreamClient.fetchVod(creds.first, creds.second, creds.third)
+                    val categories = XtreamClient.fetchVodCategories(creds.first, creds.second, creds.third)
+                    XtreamClient.fetchVod(creds.first, creds.second, creds.third, categories)
                 }
                 val series = withContext(Dispatchers.IO) {
-                    XtreamClient.fetchSeriesList(creds.first, creds.second, creds.third)
+                    val categories = XtreamClient.fetchSeriesCategories(creds.first, creds.second, creds.third)
+                    XtreamClient.fetchSeriesList(creds.first, creds.second, creds.third, categories)
                 }
 
                 val history = watchHistoryManager.getHistory().take(3)
@@ -439,9 +441,18 @@ class MainActivity : AppCompatActivity() {
         binding.progressBar.visibility = View.VISIBLE
         lifecycleScope.launch {
             try {
-                val live = withContext(Dispatchers.IO) { XtreamClient.fetchLive(creds.first, creds.second, creds.third) }
-                val vod = withContext(Dispatchers.IO) { XtreamClient.fetchVod(creds.first, creds.second, creds.third) }
-                val series = withContext(Dispatchers.IO) { XtreamClient.fetchSeriesList(creds.first, creds.second, creds.third) }
+                val live = withContext(Dispatchers.IO) {
+                    val categories = XtreamClient.fetchLiveCategories(creds.first, creds.second, creds.third)
+                    XtreamClient.fetchLive(creds.first, creds.second, creds.third, categories)
+                }
+                val vod = withContext(Dispatchers.IO) {
+                    val categories = XtreamClient.fetchVodCategories(creds.first, creds.second, creds.third)
+                    XtreamClient.fetchVod(creds.first, creds.second, creds.third, categories)
+                }
+                val series = withContext(Dispatchers.IO) {
+                    val categories = XtreamClient.fetchSeriesCategories(creds.first, creds.second, creds.third)
+                    XtreamClient.fetchSeriesList(creds.first, creds.second, creds.third, categories)
+                }
                 
                 val favoriteIds = favoritesManager.getFavoriteIds()
                 val allItems = live + vod + series

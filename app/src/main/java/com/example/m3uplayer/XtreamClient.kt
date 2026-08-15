@@ -1,5 +1,8 @@
 package com.example.m3uplayer
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.withContext
 import okhttp3.Dns
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -132,42 +135,19 @@ object XtreamClient {
     // نستخدم mapNotNull + try/catch لكل عنصر بمفرده: عنصر واحد تالف في استجابة
     // الخادم لن يُسقط القائمة بأكملها بعد الآن (كان JSONException في عنصر واحد
     // يوقف array.map{} فيُفرَّغ الكتالوج كله ويظهر خطأ عام بدل نتائج جزئية).
+    //
+    // ملاحظة مهمة: كثير من سيرفرات Xtream (خصوصًا لوحات الطرف الثالث غير الرسمية)
+    // لا تُرجع الكتالوج الكامل عند الطلب بلا "category_id" — بل نسخة محدودة فقط.
+    // لضمان جلب كل شيء، نطلب كل تصنيف بمعرّفه الخاص بالتوازي، ثم ندمج النتائج
+    // مع الطلب الشامل، ونزيل أي تكرار بالاعتماد على المعرّف (id).
 
-    fun fetchLive(
+    private fun parseVodArray(
+        body: String,
         server: String,
         username: String,
         password: String,
-        categories: Map<String, String> = emptyMap()
+        categories: Map<String, String>
     ): List<MediaEntry> {
-        val body = fetchJson(apiUrl(server, username, password, "get_live_streams"))
-        val array = JSONArray(body)
-        return (0 until array.length()).mapNotNull { i ->
-            try {
-                val item = array.getJSONObject(i)
-                val id = item.optString("stream_id")
-                val categoryId = item.optString("category_id")
-                MediaEntry(
-                    id         = id,
-                    title      = item.optString("name", "بدون اسم"),
-                    subtitle   = categoryId,
-                    playUrl    = liveStreamUrl(server, username, password, id),
-                    groupTitle = categories[categoryId]
-                        ?: item.optString("category_name").takeIf { it.isNotEmpty() },
-                    imageUrl   = item.optString("stream_icon").takeIf { it.isNotEmpty() }
-                )
-            } catch (e: Exception) {
-                null
-            }
-        }
-    }
-
-    fun fetchVod(
-        server: String,
-        username: String,
-        password: String,
-        categories: Map<String, String> = emptyMap()
-    ): List<MediaEntry> {
-        val body = fetchJson(apiUrl(server, username, password, "get_vod_streams"))
         val array = JSONArray(body)
         return (0 until array.length()).mapNotNull { i ->
             try {
@@ -189,13 +169,10 @@ object XtreamClient {
         }
     }
 
-    fun fetchSeriesList(
-        server: String,
-        username: String,
-        password: String,
-        categories: Map<String, String> = emptyMap()
+    private fun parseSeriesArray(
+        body: String,
+        categories: Map<String, String>
     ): List<MediaEntry> {
-        val body = fetchJson(apiUrl(server, username, password, "get_series"))
         val array = JSONArray(body)
         return (0 until array.length()).mapNotNull { i ->
             try {
@@ -213,6 +190,136 @@ object XtreamClient {
                 null
             }
         }
+    }
+
+    private fun parseLiveArray(
+        body: String,
+        server: String,
+        username: String,
+        password: String,
+        categories: Map<String, String>
+    ): List<MediaEntry> {
+        val array = JSONArray(body)
+        return (0 until array.length()).mapNotNull { i ->
+            try {
+                val item = array.getJSONObject(i)
+                val id = item.optString("stream_id")
+                val categoryId = item.optString("category_id")
+                MediaEntry(
+                    id         = id,
+                    title      = item.optString("name", "بدون اسم"),
+                    subtitle   = categoryId,
+                    playUrl    = liveStreamUrl(server, username, password, id),
+                    groupTitle = categories[categoryId]
+                        ?: item.optString("category_name").takeIf { it.isNotEmpty() },
+                    imageUrl   = item.optString("stream_icon").takeIf { it.isNotEmpty() }
+                )
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+
+    suspend fun fetchLive(
+        server: String,
+        username: String,
+        password: String,
+        categories: Map<String, String> = emptyMap()
+    ): List<MediaEntry> = withContext(Dispatchers.IO) {
+        val merged = LinkedHashMap<String, MediaEntry>()
+
+        // الطلب الشامل أولاً (يكفي وحده في أغلب السيرفرات المتوافقة مع المواصفة الرسمية)
+        try {
+            val body = fetchJson(apiUrl(server, username, password, "get_live_streams"))
+            parseLiveArray(body, server, username, password, categories).forEach { merged[it.id] = it }
+        } catch (e: Exception) { /* سنعتمد على الطلب حسب التصنيف أدناه */ }
+
+        // طلب كل تصنيف بمعرّفه بالتوازي: يضمن الكتالوج الكامل حتى مع السيرفرات
+        // التي تُرجع نسخة محدودة فقط عند الطلب بلا category_id
+        if (categories.isNotEmpty()) {
+            val perCategory = categories.keys.map { categoryId ->
+                async {
+                    try {
+                        val body = fetchJson(
+                            apiUrl(server, username, password, "get_live_streams") + "&category_id=$categoryId"
+                        )
+                        parseLiveArray(body, server, username, password, categories)
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                }
+            }
+            perCategory.forEach { deferred ->
+                deferred.await().forEach { merged[it.id] = it }
+            }
+        }
+        merged.values.toList()
+    }
+
+    suspend fun fetchVod(
+        server: String,
+        username: String,
+        password: String,
+        categories: Map<String, String> = emptyMap()
+    ): List<MediaEntry> = withContext(Dispatchers.IO) {
+        val merged = LinkedHashMap<String, MediaEntry>()
+
+        try {
+            val body = fetchJson(apiUrl(server, username, password, "get_vod_streams"))
+            parseVodArray(body, server, username, password, categories).forEach { merged[it.id] = it }
+        } catch (e: Exception) { /* سنعتمد على الطلب حسب التصنيف أدناه */ }
+
+        if (categories.isNotEmpty()) {
+            val perCategory = categories.keys.map { categoryId ->
+                async {
+                    try {
+                        val body = fetchJson(
+                            apiUrl(server, username, password, "get_vod_streams") + "&category_id=$categoryId"
+                        )
+                        parseVodArray(body, server, username, password, categories)
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                }
+            }
+            perCategory.forEach { deferred ->
+                deferred.await().forEach { merged[it.id] = it }
+            }
+        }
+        merged.values.toList()
+    }
+
+    suspend fun fetchSeriesList(
+        server: String,
+        username: String,
+        password: String,
+        categories: Map<String, String> = emptyMap()
+    ): List<MediaEntry> = withContext(Dispatchers.IO) {
+        val merged = LinkedHashMap<String, MediaEntry>()
+
+        try {
+            val body = fetchJson(apiUrl(server, username, password, "get_series"))
+            parseSeriesArray(body, categories).forEach { merged[it.id] = it }
+        } catch (e: Exception) { /* سنعتمد على الطلب حسب التصنيف أدناه */ }
+
+        if (categories.isNotEmpty()) {
+            val perCategory = categories.keys.map { categoryId ->
+                async {
+                    try {
+                        val body = fetchJson(
+                            apiUrl(server, username, password, "get_series") + "&category_id=$categoryId"
+                        )
+                        parseSeriesArray(body, categories)
+                    } catch (e: Exception) {
+                        emptyList()
+                    }
+                }
+            }
+            perCategory.forEach { deferred ->
+                deferred.await().forEach { merged[it.id] = it }
+            }
+        }
+        merged.values.toList()
     }
 
     fun fetchSeriesEpisodes(
