@@ -206,18 +206,38 @@ class MainActivity : AppCompatActivity() {
             val matchesFavorite = currentTab != 4 || favoritesManager.isFavorite(item.id)
             matchesQuery && matchesCategory && matchesFavorite
         }
+        updateContentCountText(filtered.size)
         updateAdapter(filtered)
+    }
+
+    private fun updateContentCountText(count: Int) {
+        val label = when (currentTab) {
+            1 -> "قناة"
+            2 -> "فيلم"
+            3 -> "مسلسل"
+            4 -> "عنصر مفضّل"
+            else -> "عنصر"
+        }
+        binding.textContentCount.text = "$count $label"
     }
 
     private fun updateCategoriesChips(items: List<MediaEntry>) {
         binding.chipGroupCategories.removeAllViews()
+
+        // عدد العناصر داخل كل تصنيف (لعرضه بجانب اسمه في الـ Chip)
+        val countPerCategory = items
+            .filter { !it.groupTitle.isNullOrBlank() }
+            .groupingBy { it.groupTitle!! }
+            .eachCount()
+
         val categories = mutableSetOf("الكل")
         items.forEach { if (!it.groupTitle.isNullOrBlank()) categories.add(it.groupTitle!!) }
         currentCategories = categories.toList()
 
         for (cat in currentCategories) {
+            val count = if (cat == "الكل") items.size else (countPerCategory[cat] ?: 0)
             val chip = Chip(this).apply {
-                text = cat
+                text = "$cat ($count)"
                 isCheckable = true
                 isChecked = (cat == selectedCategory)
                 setOnCheckedChangeListener { _, checked ->
