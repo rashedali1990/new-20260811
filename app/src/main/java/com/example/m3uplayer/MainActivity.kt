@@ -83,6 +83,8 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        binding.textBuildInfo.text = "build ${BuildConfig.GIT_COMMIT} • ${BuildConfig.BUILD_TIME} UTC"
+
         profileManager         = ProfileManager(this)
         favoritesManager       = FavoritesManager(this)
         parentalControlManager = ParentalControlManager(this)

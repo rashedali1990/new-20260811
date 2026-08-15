@@ -40,6 +40,15 @@
                 android:text="منصة البث الذكية"
                 android:textColor="@color/text_muted"
                 android:textSize="10sp" />
+
+            <TextView
+                android:id="@+id/textBuildInfo"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/text_muted"
+                android:textSize="8sp"
+                android:alpha="0.6"
+                tools:text="build a1b2c3d • 2026-08-15 12:00" />
         </LinearLayout>
 
         <ImageButton
