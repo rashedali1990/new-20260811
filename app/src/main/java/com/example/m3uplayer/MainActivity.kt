@@ -163,6 +163,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showTab(position: Int) {
         currentTab = position
+        selectedCategory = "الكل" // إعادة ضبط الفلتر عند كل تبديل تبويب (كان يبقى من التبويب السابق ويُخفي أغلب المحتوى)
         binding.dashboardLayout.visibility = View.GONE
         binding.splitScreenLayout.visibility = View.GONE
 
