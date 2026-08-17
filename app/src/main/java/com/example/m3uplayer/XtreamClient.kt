@@ -297,6 +297,37 @@ object XtreamClient {
         }
     }
 
+    // ─── ترقيم الصفحات (Pagination) ──────────────────────────────────────────
+    // كثير من لوحات Xtream غير الرسمية تفرض حدًا أقصى لعدد العناصر في كل طلب
+    // (حتى مع تحديد category_id!) وتتطلب معاملات page/limit غير موجودة في
+    // المواصفة الرسمية للحصول على البقية. هذه الدالة تطلب صفحة تلو الأخرى
+    // وتتوقف تلقائيًا إن لم تُضِف الصفحة الجديدة أي عنصر جديد (يعني إما انتهت
+    // الصفحات فعليًا، أو أن السيرفر يتجاهل الترقيم أصلاً ويُرجع نفس المجموعة).
+    private suspend fun fetchAllPages(
+        baseUrl: String,
+        parse: (String) -> List<MediaEntry>
+    ): List<MediaEntry> {
+        val merged = LinkedHashMap<String, MediaEntry>()
+        var page = 1
+        val pageSize = 500
+        while (page <= 30) { // سقف أمان لمنع حلقة لا نهائية
+            val url = "$baseUrl&page=$page&limit=$pageSize"
+            val items = try {
+                parse(fetchJson(url))
+            } catch (e: Exception) {
+                break
+            }
+            if (items.isEmpty()) break
+            val sizeBefore = merged.size
+            items.forEach { merged[it.id] = it }
+            val addedNew = merged.size - sizeBefore
+            if (addedNew == 0) break // لا جديد: إما انتهت الصفحات أو السيرفر يتجاهل الترقيم
+            if (items.size < pageSize) break // آخر صفحة على الأغلب
+            page++
+        }
+        return merged.values.toList()
+    }
+
     suspend fun fetchLive(
         server: String,
         username: String,
@@ -308,24 +339,18 @@ object XtreamClient {
         // الظاهرة فعليًا داخل عناصر الطلب الشامل (احتياط إن فشلت القائمة المنفصلة)
         val categoryIds = mutableSetOf<String>().apply { addAll(categories.keys) }
 
-        try {
-            val body = fetchJson(apiUrl(server, username, password, "get_live_streams"))
-            parseLiveArray(body, server, username, password, categories, categoryIds).forEach { merged[it.id] = it }
-        } catch (e: Exception) { /* سنعتمد على الطلب حسب التصنيف أدناه */ }
+        val bulkBase = apiUrl(server, username, password, "get_live_streams")
+        fetchAllPages(bulkBase) { body ->
+            parseLiveArray(body, server, username, password, categories, categoryIds)
+        }.forEach { merged[it.id] = it }
 
-        // طلب كل تصنيف بمعرّفه بالتوازي: يضمن الكتالوج الكامل حتى مع السيرفرات
-        // التي تُرجع نسخة محدودة فقط عند الطلب بلا category_id
+        // طلب كل تصنيف بمعرّفه بالتوازي (مع ترقيم صفحات لكل تصنيف أيضًا): يضمن
+        // الكتالوج الكامل حتى مع السيرفرات التي تحدّ كل طلب بمفرده
         if (categoryIds.isNotEmpty()) {
             val perCategory = categoryIds.map { categoryId ->
                 async {
-                    try {
-                        val body = fetchJson(
-                            apiUrl(server, username, password, "get_live_streams") + "&category_id=$categoryId"
-                        )
-                        parseLiveArray(body, server, username, password, categories)
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
+                    val base = apiUrl(server, username, password, "get_live_streams") + "&category_id=$categoryId"
+                    fetchAllPages(base) { body -> parseLiveArray(body, server, username, password, categories) }
                 }
             }
             perCategory.forEach { deferred ->
@@ -344,22 +369,16 @@ object XtreamClient {
         val merged = LinkedHashMap<String, MediaEntry>()
         val categoryIds = mutableSetOf<String>().apply { addAll(categories.keys) }
 
-        try {
-            val body = fetchJson(apiUrl(server, username, password, "get_vod_streams"))
-            parseVodArray(body, server, username, password, categories, categoryIds).forEach { merged[it.id] = it }
-        } catch (e: Exception) { /* سنعتمد على الطلب حسب التصنيف أدناه */ }
+        val bulkBase = apiUrl(server, username, password, "get_vod_streams")
+        fetchAllPages(bulkBase) { body ->
+            parseVodArray(body, server, username, password, categories, categoryIds)
+        }.forEach { merged[it.id] = it }
 
         if (categoryIds.isNotEmpty()) {
             val perCategory = categoryIds.map { categoryId ->
                 async {
-                    try {
-                        val body = fetchJson(
-                            apiUrl(server, username, password, "get_vod_streams") + "&category_id=$categoryId"
-                        )
-                        parseVodArray(body, server, username, password, categories)
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
+                    val base = apiUrl(server, username, password, "get_vod_streams") + "&category_id=$categoryId"
+                    fetchAllPages(base) { body -> parseVodArray(body, server, username, password, categories) }
                 }
             }
             perCategory.forEach { deferred ->
@@ -378,22 +397,16 @@ object XtreamClient {
         val merged = LinkedHashMap<String, MediaEntry>()
         val categoryIds = mutableSetOf<String>().apply { addAll(categories.keys) }
 
-        try {
-            val body = fetchJson(apiUrl(server, username, password, "get_series"))
-            parseSeriesArray(body, categories, categoryIds).forEach { merged[it.id] = it }
-        } catch (e: Exception) { /* سنعتمد على الطلب حسب التصنيف أدناه */ }
+        val bulkBase = apiUrl(server, username, password, "get_series")
+        fetchAllPages(bulkBase) { body ->
+            parseSeriesArray(body, categories, categoryIds)
+        }.forEach { merged[it.id] = it }
 
         if (categoryIds.isNotEmpty()) {
             val perCategory = categoryIds.map { categoryId ->
                 async {
-                    try {
-                        val body = fetchJson(
-                            apiUrl(server, username, password, "get_series") + "&category_id=$categoryId"
-                        )
-                        parseSeriesArray(body, categories)
-                    } catch (e: Exception) {
-                        emptyList()
-                    }
+                    val base = apiUrl(server, username, password, "get_series") + "&category_id=$categoryId"
+                    fetchAllPages(base) { body -> parseSeriesArray(body, categories) }
                 }
             }
             perCategory.forEach { deferred ->
