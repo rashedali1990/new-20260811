@@ -131,6 +131,77 @@ object XtreamClient {
     fun fetchSeriesCategories(server: String, username: String, password: String): Map<String, String> =
         fetchCategoryMap(server, username, password, "get_series_categories")
 
+    // ─── تشخيص متقدم ──────────────────────────────────────────────────────────
+    // يبني تقريرًا نصيًا خامًا يوضح بالضبط كيف يتصرف السيرفر مع كل نوع طلب،
+    // لتحديد سبب نقص الكتالوج دون الحاجة لسجلات CI.
+    suspend fun diagnoseSeriesFetch(
+        server: String,
+        username: String,
+        password: String
+    ): String = withContext(Dispatchers.IO) {
+        val report = StringBuilder()
+
+        // 1) استجابة get_series_categories الخام
+        try {
+            val body = fetchJson(apiUrl(server, username, password, "get_series_categories"))
+            val arr = try { JSONArray(body) } catch (e: Exception) { null }
+            report.append("① get_series_categories:\n")
+            report.append("  حجم الاستجابة: ${body.length} حرف\n")
+            report.append("  عدد العناصر: ${arr?.length() ?: "فشل تحليل JSON"}\n")
+            report.append("  أول 200 حرف: ${body.take(200)}\n\n")
+        } catch (e: Exception) {
+            report.append("① get_series_categories: فشل الطلب - ${e.message}\n\n")
+        }
+
+        // 2) استجابة get_series الشاملة (بلا category_id)
+        var bulkCount = 0
+        val bulkCategoryIds = mutableSetOf<String>()
+        try {
+            val body = fetchJson(apiUrl(server, username, password, "get_series"))
+            val arr = JSONArray(body)
+            bulkCount = arr.length()
+            for (i in 0 until arr.length()) {
+                try {
+                    val cid = arr.getJSONObject(i).optString("category_id")
+                    if (cid.isNotEmpty()) bulkCategoryIds.add(cid)
+                } catch (e: Exception) { }
+            }
+            report.append("② get_series (شامل بلا category_id):\n")
+            report.append("  حجم الاستجابة: ${body.length} حرف\n")
+            report.append("  عدد العناصر: $bulkCount\n")
+            report.append("  عدد التصنيفات المختلفة داخل هذه العناصر: ${bulkCategoryIds.size}\n\n")
+        } catch (e: Exception) {
+            report.append("② get_series (شامل): فشل الطلب - ${e.message}\n\n")
+        }
+
+        // 3) استجابة get_series لأول تصنيف مكتشف تحديدًا (لمعرفة إن كان محدودًا أيضًا)
+        val sampleCategoryId = bulkCategoryIds.firstOrNull()
+        if (sampleCategoryId != null) {
+            try {
+                val body = fetchJson(
+                    apiUrl(server, username, password, "get_series") + "&category_id=$sampleCategoryId"
+                )
+                val arr = JSONArray(body)
+                report.append("③ get_series&category_id=$sampleCategoryId:\n")
+                report.append("  عدد العناصر لهذا التصنيف وحده: ${arr.length()}\n\n")
+            } catch (e: Exception) {
+                report.append("③ get_series&category_id=$sampleCategoryId: فشل الطلب - ${e.message}\n\n")
+            }
+        }
+
+        // 4) تجربة معاملات ترقيم شائعة غير رسمية (page/limit) تستخدمها بعض اللوحات
+        try {
+            val body = fetchJson(apiUrl(server, username, password, "get_series") + "&limit=10000&page=1")
+            val arr = JSONArray(body)
+            report.append("④ get_series&limit=10000&page=1 (تجربة ترقيم غير رسمي):\n")
+            report.append("  عدد العناصر: ${arr.length()}\n")
+        } catch (e: Exception) {
+            report.append("④ get_series&limit=10000&page=1: فشل الطلب - ${e.message}\n")
+        }
+
+        report.toString()
+    }
+
     // ─── قوائم المحتوى ───────────────────────────────────────────────────────
     // نستخدم mapNotNull + try/catch لكل عنصر بمفرده: عنصر واحد تالف في استجابة
     // الخادم لن يُسقط القائمة بأكملها بعد الآن (كان JSONException في عنصر واحد
