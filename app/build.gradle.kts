@@ -3,24 +3,6 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
-// معرّف Git الحالي + وقت البناء، يُستخدمان لعرض بصمة إصدار دقيقة داخل التطبيق
-// (لحل التباس "هل أنا فعليًا أستخدم آخر نسخة APK؟" نهائيًا)
-val gitCommitHash: String = try {
-    val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
-        .directory(rootDir)
-        .redirectErrorStream(true)
-        .start()
-    val output = process.inputStream.bufferedReader().readText().trim()
-    process.waitFor()
-    output.ifBlank { "unknown" }
-} catch (e: Exception) {
-    "unknown"
-}
-
-val buildTimestamp: String = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
-    .apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }
-    .format(java.util.Date())
-
 android {
     namespace = "com.example.m3uplayer"
     compileSdk = 34
@@ -31,9 +13,6 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-
-        buildConfigField("String", "GIT_COMMIT", "\"$gitCommitHash\"")
-        buildConfigField("String", "BUILD_TIME", "\"$buildTimestamp\"")
     }
 
     buildTypes {
@@ -58,7 +37,6 @@ android {
 
     buildFeatures {
         viewBinding = true
-        buildConfig = true
     }
 }
 

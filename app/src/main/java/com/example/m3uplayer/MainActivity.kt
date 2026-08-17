@@ -33,6 +33,8 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_PROFILE_ID = "extra_profile_id"
         const val GRID_SPAN_COUNT  = 3
         const val HERO_BANNER_INTERVAL_MS = 4500L
+        // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
+        const val BUILD_TAG = "2026-08-17-01"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -83,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.textBuildInfo.text = "build ${BuildConfig.GIT_COMMIT} • ${BuildConfig.BUILD_TIME} UTC"
+        binding.textBuildInfo.text = "build $BUILD_TAG"
 
         profileManager         = ProfileManager(this)
         favoritesManager       = FavoritesManager(this)
