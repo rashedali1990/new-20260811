@@ -146,7 +146,8 @@ object XtreamClient {
         server: String,
         username: String,
         password: String,
-        categories: Map<String, String>
+        categories: Map<String, String>,
+        seenCategoryIds: MutableSet<String>? = null
     ): List<MediaEntry> {
         val array = JSONArray(body)
         return (0 until array.length()).mapNotNull { i ->
@@ -155,6 +156,7 @@ object XtreamClient {
                 val id  = item.optString("stream_id")
                 val ext = item.optString("container_extension", "mp4")
                 val categoryId = item.optString("category_id")
+                if (categoryId.isNotEmpty()) seenCategoryIds?.add(categoryId)
                 MediaEntry(
                     id         = id,
                     title      = item.optString("name", "بدون اسم"),
@@ -171,13 +173,15 @@ object XtreamClient {
 
     private fun parseSeriesArray(
         body: String,
-        categories: Map<String, String>
+        categories: Map<String, String>,
+        seenCategoryIds: MutableSet<String>? = null
     ): List<MediaEntry> {
         val array = JSONArray(body)
         return (0 until array.length()).mapNotNull { i ->
             try {
                 val item = array.getJSONObject(i)
                 val categoryId = item.optString("category_id")
+                if (categoryId.isNotEmpty()) seenCategoryIds?.add(categoryId)
                 MediaEntry(
                     id         = item.optString("series_id"),
                     title      = item.optString("name", "بدون اسم"),
@@ -197,7 +201,8 @@ object XtreamClient {
         server: String,
         username: String,
         password: String,
-        categories: Map<String, String>
+        categories: Map<String, String>,
+        seenCategoryIds: MutableSet<String>? = null
     ): List<MediaEntry> {
         val array = JSONArray(body)
         return (0 until array.length()).mapNotNull { i ->
@@ -205,6 +210,7 @@ object XtreamClient {
                 val item = array.getJSONObject(i)
                 val id = item.optString("stream_id")
                 val categoryId = item.optString("category_id")
+                if (categoryId.isNotEmpty()) seenCategoryIds?.add(categoryId)
                 MediaEntry(
                     id         = id,
                     title      = item.optString("name", "بدون اسم"),
@@ -227,17 +233,19 @@ object XtreamClient {
         categories: Map<String, String> = emptyMap()
     ): List<MediaEntry> = withContext(Dispatchers.IO) {
         val merged = LinkedHashMap<String, MediaEntry>()
+        // مصدر معرّفات التصنيفات: قائمة get_live_categories (إن نجحت) + المعرّفات
+        // الظاهرة فعليًا داخل عناصر الطلب الشامل (احتياط إن فشلت القائمة المنفصلة)
+        val categoryIds = mutableSetOf<String>().apply { addAll(categories.keys) }
 
-        // الطلب الشامل أولاً (يكفي وحده في أغلب السيرفرات المتوافقة مع المواصفة الرسمية)
         try {
             val body = fetchJson(apiUrl(server, username, password, "get_live_streams"))
-            parseLiveArray(body, server, username, password, categories).forEach { merged[it.id] = it }
+            parseLiveArray(body, server, username, password, categories, categoryIds).forEach { merged[it.id] = it }
         } catch (e: Exception) { /* سنعتمد على الطلب حسب التصنيف أدناه */ }
 
         // طلب كل تصنيف بمعرّفه بالتوازي: يضمن الكتالوج الكامل حتى مع السيرفرات
         // التي تُرجع نسخة محدودة فقط عند الطلب بلا category_id
-        if (categories.isNotEmpty()) {
-            val perCategory = categories.keys.map { categoryId ->
+        if (categoryIds.isNotEmpty()) {
+            val perCategory = categoryIds.map { categoryId ->
                 async {
                     try {
                         val body = fetchJson(
@@ -263,14 +271,15 @@ object XtreamClient {
         categories: Map<String, String> = emptyMap()
     ): List<MediaEntry> = withContext(Dispatchers.IO) {
         val merged = LinkedHashMap<String, MediaEntry>()
+        val categoryIds = mutableSetOf<String>().apply { addAll(categories.keys) }
 
         try {
             val body = fetchJson(apiUrl(server, username, password, "get_vod_streams"))
-            parseVodArray(body, server, username, password, categories).forEach { merged[it.id] = it }
+            parseVodArray(body, server, username, password, categories, categoryIds).forEach { merged[it.id] = it }
         } catch (e: Exception) { /* سنعتمد على الطلب حسب التصنيف أدناه */ }
 
-        if (categories.isNotEmpty()) {
-            val perCategory = categories.keys.map { categoryId ->
+        if (categoryIds.isNotEmpty()) {
+            val perCategory = categoryIds.map { categoryId ->
                 async {
                     try {
                         val body = fetchJson(
@@ -296,14 +305,15 @@ object XtreamClient {
         categories: Map<String, String> = emptyMap()
     ): List<MediaEntry> = withContext(Dispatchers.IO) {
         val merged = LinkedHashMap<String, MediaEntry>()
+        val categoryIds = mutableSetOf<String>().apply { addAll(categories.keys) }
 
         try {
             val body = fetchJson(apiUrl(server, username, password, "get_series"))
-            parseSeriesArray(body, categories).forEach { merged[it.id] = it }
+            parseSeriesArray(body, categories, categoryIds).forEach { merged[it.id] = it }
         } catch (e: Exception) { /* سنعتمد على الطلب حسب التصنيف أدناه */ }
 
-        if (categories.isNotEmpty()) {
-            val perCategory = categories.keys.map { categoryId ->
+        if (categoryIds.isNotEmpty()) {
+            val perCategory = categoryIds.map { categoryId ->
                 async {
                     try {
                         val body = fetchJson(

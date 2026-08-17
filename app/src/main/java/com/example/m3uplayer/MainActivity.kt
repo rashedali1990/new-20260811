@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
         const val GRID_SPAN_COUNT  = 3
         const val HERO_BANNER_INTERVAL_MS = 4500L
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "2026-08-17-01"
+        const val BUILD_TAG = "2026-08-17-02"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -222,7 +222,10 @@ class MainActivity : AppCompatActivity() {
             4 -> "عنصر مفضّل"
             else -> "عنصر"
         }
-        binding.textContentCount.text = "$count $label"
+        val categoryCountSuffix = if (selectedCategory == "الكل" && currentCategories.size > 1) {
+            " من ${currentCategories.size - 1} تصنيف"
+        } else ""
+        binding.textContentCount.text = "$count $label$categoryCountSuffix"
     }
 
     private fun updateCategoriesChips(items: List<MediaEntry>) {
