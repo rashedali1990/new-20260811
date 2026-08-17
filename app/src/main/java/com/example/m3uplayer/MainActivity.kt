@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
         const val GRID_SPAN_COUNT  = 3
         const val HERO_BANNER_INTERVAL_MS = 4500L
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "2026-08-17-02"
+        const val BUILD_TAG = "TEST-03"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -86,6 +86,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.textBuildInfo.text = "build $BUILD_TAG"
+        Toast.makeText(this, "🔧 نسخة التطبيق: $BUILD_TAG", Toast.LENGTH_LONG).show()
 
         profileManager         = ProfileManager(this)
         favoritesManager       = FavoritesManager(this)
