@@ -6,9 +6,13 @@ plugins {
 // معرّف Git الحالي + وقت البناء، يُستخدمان لعرض بصمة إصدار دقيقة داخل التطبيق
 // (لحل التباس "هل أنا فعليًا أستخدم آخر نسخة APK؟" نهائيًا)
 val gitCommitHash: String = try {
-    providers.exec {
-        commandLine("git", "rev-parse", "--short", "HEAD")
-    }.standardOutput.asText.get().trim()
+    val process = ProcessBuilder("git", "rev-parse", "--short", "HEAD")
+        .directory(rootDir)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().readText().trim()
+    process.waitFor()
+    output.ifBlank { "unknown" }
 } catch (e: Exception) {
     "unknown"
 }
