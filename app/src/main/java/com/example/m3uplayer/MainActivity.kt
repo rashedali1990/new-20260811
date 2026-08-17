@@ -33,8 +33,9 @@ class MainActivity : AppCompatActivity() {
         const val EXTRA_PROFILE_ID = "extra_profile_id"
         const val GRID_SPAN_COUNT  = 3
         const val HERO_BANNER_INTERVAL_MS = 4500L
+        const val OTHER_CATEGORY = "أخرى"
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "DIAG-04"
+        const val BUILD_TAG = "OTHER-05"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -87,12 +88,6 @@ class MainActivity : AppCompatActivity() {
 
         binding.textBuildInfo.text = "build $BUILD_TAG"
         Toast.makeText(this, "🔧 نسخة التطبيق: $BUILD_TAG", Toast.LENGTH_LONG).show()
-
-        // تشخيص متقدم: اضغط مطوّلاً على عدّاد العناصر لعرض تقرير خام عن سلوك السيرفر
-        binding.textContentCount.setOnLongClickListener {
-            runSeriesDiagnostics()
-            true
-        }
 
         profileManager         = ProfileManager(this)
         favoritesManager       = FavoritesManager(this)
@@ -213,7 +208,11 @@ class MainActivity : AppCompatActivity() {
         val queryText = query ?: ""
         val filtered = allMediaItems.filter { item ->
             val matchesQuery = queryText.isBlank() || item.title.contains(queryText, ignoreCase = true)
-            val matchesCategory = selectedCategory == "الكل" || item.groupTitle.equals(selectedCategory, ignoreCase = true)
+            val matchesCategory = when (selectedCategory) {
+                "الكل" -> true
+                OTHER_CATEGORY -> item.groupTitle.isNullOrBlank()
+                else -> item.groupTitle.equals(selectedCategory, ignoreCase = true)
+            }
             val matchesFavorite = currentTab != 4 || favoritesManager.isFavorite(item.id)
             matchesQuery && matchesCategory && matchesFavorite
         }
@@ -243,13 +242,19 @@ class MainActivity : AppCompatActivity() {
             .filter { !it.groupTitle.isNullOrBlank() }
             .groupingBy { it.groupTitle!! }
             .eachCount()
+        val uncategorizedCount = items.count { it.groupTitle.isNullOrBlank() }
 
         val categories = mutableSetOf("الكل")
         items.forEach { if (!it.groupTitle.isNullOrBlank()) categories.add(it.groupTitle!!) }
+        if (uncategorizedCount > 0) categories.add(OTHER_CATEGORY)
         currentCategories = categories.toList()
 
         for (cat in currentCategories) {
-            val count = if (cat == "الكل") items.size else (countPerCategory[cat] ?: 0)
+            val count = when (cat) {
+                "الكل" -> items.size
+                OTHER_CATEGORY -> uncategorizedCount
+                else -> countPerCategory[cat] ?: 0
+            }
             val chip = Chip(this).apply {
                 text = "$cat ($count)"
                 isCheckable = true
@@ -486,46 +491,6 @@ class MainActivity : AppCompatActivity() {
         allMediaItems.addAll(items)
         updateCategoriesChips(items)
         filterItems("")
-    }
-
-    private fun runSeriesDiagnostics() {
-        val creds = requireCreds() ?: return
-        val progressDialog = androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("جاري التشخيص...")
-            .setMessage("يرجى الانتظار، يتم اختبار السيرفر بعدة طرق")
-            .setCancelable(false)
-            .show()
-
-        lifecycleScope.launch {
-            val report = try {
-                withContext(Dispatchers.IO) {
-                    XtreamClient.diagnoseSeriesFetch(creds.first, creds.second, creds.third)
-                }
-            } catch (e: Exception) {
-                "فشل التشخيص: ${e.message}"
-            }
-            progressDialog.dismiss()
-
-            val scrollView = android.widget.ScrollView(this@MainActivity)
-            val textView = android.widget.TextView(this@MainActivity).apply {
-                text = report
-                setPadding(32, 24, 32, 24)
-                textIsSelectable = true
-                textSize = 12f
-            }
-            scrollView.addView(textView)
-
-            androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
-                .setTitle("تقرير تشخيص المسلسلات")
-                .setView(scrollView)
-                .setPositiveButton("نسخ التقرير") { _, _ ->
-                    val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("تقرير التشخيص", report))
-                    Toast.makeText(this@MainActivity, "تم نسخ التقرير", Toast.LENGTH_SHORT).show()
-                }
-                .setNegativeButton("إغلاق", null)
-                .show()
-        }
     }
 
     private fun showLoadErrorDialog(e: Exception) {
