@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         const val HERO_BANNER_INTERVAL_MS = 4500L
         const val OTHER_CATEGORY = "أخرى"
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "PAGE-07"
+        const val BUILD_TAG = "SEARCH-08"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -93,6 +93,18 @@ class MainActivity : AppCompatActivity() {
         binding.textContentCount.setOnLongClickListener {
             runSeriesDiagnostics()
             true
+        }
+
+        binding.editSearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                binding.buttonClearSearch.visibility = if (s.isNullOrEmpty()) View.GONE else View.VISIBLE
+                filterItems(s?.toString())
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+        binding.buttonClearSearch.setOnClickListener {
+            binding.editSearch.setText("")
         }
 
         profileManager         = ProfileManager(this)
@@ -176,6 +188,9 @@ class MainActivity : AppCompatActivity() {
     private fun showTab(position: Int) {
         currentTab = position
         selectedCategory = "الكل" // إعادة ضبط الفلتر عند كل تبديل تبويب (كان يبقى من التبويب السابق ويُخفي أغلب المحتوى)
+        if (binding.editSearch.text.isNotEmpty()) {
+            binding.editSearch.setText("") // نفس السبب: نص بحث عالق من تبويب سابق كان سيُخفي أغلب المحتوى هنا أيضًا
+        }
         binding.dashboardLayout.visibility = View.GONE
         binding.splitScreenLayout.visibility = View.GONE
 
