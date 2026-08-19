@@ -33,25 +33,26 @@ object XtreamClient {
     data class LoginResult(val success: Boolean, val message: String)
 
     /**
-     * تحديث إعدادات الشبكة (بروكسي اختياري).
+     * تحديث إعدادات الشبكة (بروكسي اختياري، HTTP أو SOCKS5).
      * يُستدعى من SettingsActivity عند تغيير إعدادات الملف التعريفي.
      */
-    fun updateNetworkSettings(proxyHost: String?, proxyPort: Int) {
+    fun updateNetworkSettings(proxyHost: String?, proxyPort: Int, proxyType: String = "HTTP") {
         val builder = OkHttpClient.Builder()
             .dns(AdGuardDns())
             .connectTimeout(20, java.util.concurrent.TimeUnit.SECONDS)
             .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
 
         if (!proxyHost.isNullOrBlank() && proxyPort > 0) {
-            val proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress(proxyHost, proxyPort))
+            val type = if (proxyType.equals("SOCKS5", ignoreCase = true)) Proxy.Type.SOCKS else Proxy.Type.HTTP
+            val proxy = Proxy(type, InetSocketAddress(proxyHost, proxyPort))
             builder.proxy(proxy)
         }
 
         httpClient = builder.build()
     }
 
-    fun updateProxy(host: String?, port: Int) {
-        updateNetworkSettings(host, port)
+    fun updateProxy(host: String?, port: Int, type: String = "HTTP") {
+        updateNetworkSettings(host, port, type)
     }
 
     private fun clean(url: String) = url.trim().trimEnd('/')

@@ -27,6 +27,7 @@ class ProfileManager(context: Context) {
         password: String,
         proxyHost: String = "",
         proxyPort: Int = 0,
+        proxyType: String = "HTTP",
         dnsServer: String = ""
     ): Profile {
         val profiles = getAllProfiles().toMutableList()
@@ -38,6 +39,7 @@ class ProfileManager(context: Context) {
             password = password,
             proxyHost = proxyHost,
             proxyPort = proxyPort,
+            proxyType = proxyType,
             dnsServer = dnsServer
         )
         profiles.add(newProfile)
@@ -53,6 +55,7 @@ class ProfileManager(context: Context) {
         password: String,
         proxyHost: String = "",
         proxyPort: Int = 0,
+        proxyType: String = "HTTP",
         dnsServer: String = ""
     ) {
         val profiles = getAllProfiles().toMutableList()
@@ -66,6 +69,7 @@ class ProfileManager(context: Context) {
                 password = password,
                 proxyHost = proxyHost,
                 proxyPort = proxyPort,
+                proxyType = proxyType,
                 dnsServer = dnsServer
             )
             persist(profiles)

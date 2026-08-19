@@ -36,7 +36,14 @@ class SettingsActivity : AppCompatActivity() {
             binding.editUsername.setText(it.username)
             binding.editPassword.setText(it.password)
             binding.editDnsServer.setText(it.dnsServer)
-        }
+            binding.editProxyHost.setText(it.proxyHost)
+            if (it.proxyPort > 0) binding.editProxyPort.setText(it.proxyPort.toString())
+            if (it.proxyType.equals("SOCKS5", ignoreCase = true)) {
+                binding.toggleProxyType.check(R.id.buttonProxySocks5)
+            } else {
+                binding.toggleProxyType.check(R.id.buttonProxyHttp)
+            }
+        } ?: binding.toggleProxyType.check(R.id.buttonProxyHttp)
 
         // Theme Selection
         val prefs = getSharedPreferences("m3uplayer_settings", Context.MODE_PRIVATE)
@@ -76,9 +83,16 @@ class SettingsActivity : AppCompatActivity() {
             val user = binding.editUsername.text.toString()
             val pass = binding.editPassword.text.toString()
             val dns = binding.editDnsServer.text.toString()
+            val proxyHost = binding.editProxyHost.text.toString().trim()
+            val proxyPort = binding.editProxyPort.text.toString().trim().toIntOrNull() ?: 0
+            val proxyType = if (binding.toggleProxyType.checkedButtonId == R.id.buttonProxySocks5) "SOCKS5" else "HTTP"
 
             if (name.isEmpty() || server.isEmpty() || user.isEmpty() || pass.isEmpty()) {
                 Toast.makeText(this, "الرجاء تعبئة جميع الحقول", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            if (proxyHost.isNotEmpty() && proxyPort <= 0) {
+                Toast.makeText(this, "الرجاء إدخال منفذ (Port) صحيح للبروكسي", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
@@ -89,10 +103,12 @@ class SettingsActivity : AppCompatActivity() {
                     serverUrl = server,
                     username = user,
                     password = pass,
-                    proxyHost = it.proxyHost,
-                    proxyPort = it.proxyPort,
+                    proxyHost = proxyHost,
+                    proxyPort = proxyPort,
+                    proxyType = proxyType,
                     dnsServer = dns
                 )
+                XtreamClient.updateNetworkSettings(proxyHost, proxyPort, proxyType)
                 Toast.makeText(this, "تم حفظ الملف التعريفي بنجاح", Toast.LENGTH_SHORT).show()
                 finish()
             }

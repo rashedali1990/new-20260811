@@ -65,7 +65,8 @@ class PlayerActivity : AppCompatActivity() {
             streamUrl     = streamUrl,
             startPosition = startPosition,
             proxyHost     = currentProfile?.proxyHost,
-            proxyPort     = currentProfile?.proxyPort ?: 0
+            proxyPort     = currentProfile?.proxyPort ?: 0,
+            proxyType     = currentProfile?.proxyType ?: "HTTP"
         )
 
         binding.buttonExternalPlayer.setOnClickListener {
@@ -335,11 +336,13 @@ class PlayerActivity : AppCompatActivity() {
         streamUrl: String,
         startPosition: Long,
         proxyHost: String?,
-        proxyPort: Int
+        proxyPort: Int,
+        proxyType: String = "HTTP"
     ) {
         val dataSourceFactory: DataSource.Factory = if (!proxyHost.isNullOrBlank() && proxyPort > 0) {
-            // استخدام OkHttpDataSource مع بروكسي عبر OkHttpClient
-            val proxy = Proxy(Proxy.Type.HTTP, InetSocketAddress(proxyHost, proxyPort))
+            // استخدام OkHttpDataSource مع بروكسي عبر OkHttpClient (HTTP أو SOCKS5)
+            val type = if (proxyType.equals("SOCKS5", ignoreCase = true)) Proxy.Type.SOCKS else Proxy.Type.HTTP
+            val proxy = Proxy(type, InetSocketAddress(proxyHost, proxyPort))
             val okHttpClient = okhttp3.OkHttpClient.Builder().proxy(proxy).build()
             androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(okHttpClient)
                 .setUserAgent("M3UPlayer/1.0")

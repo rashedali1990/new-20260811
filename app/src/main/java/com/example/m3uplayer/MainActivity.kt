@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         const val HERO_BANNER_INTERVAL_MS = 4500L
         const val OTHER_CATEGORY = "أخرى"
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "CACHE-09"
+        const val BUILD_TAG = "SOCKS5-10"
     }
 
     private lateinit var binding: ActivityMainBinding
