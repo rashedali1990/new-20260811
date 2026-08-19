@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         const val HERO_BANNER_INTERVAL_MS = 4500L
         const val OTHER_CATEGORY = "أخرى"
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "SEARCH-08"
+        const val BUILD_TAG = "CACHE-09"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -45,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var parentalControlManager: ParentalControlManager
     private lateinit var watchHistoryManager: WatchHistoryManager
     private lateinit var notificationHelper: NotificationHelper
+    private lateinit var cacheManager: MediaCacheManager
 
     private var currentProfile: Profile? = null
     private var server: String?   = null
@@ -133,6 +134,9 @@ class MainActivity : AppCompatActivity() {
         val welcomeName = currentProfile?.profileName ?: "Guest"
         binding.textWelcome.text        = "مرحباً بك، $welcomeName"
         binding.textCurrentProfile.text = welcomeName
+
+        val cacheId = currentProfile?.id ?: "${server}_$username".hashCode().toString()
+        cacheManager = MediaCacheManager(this, cacheId)
 
         binding.buttonSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -422,57 +426,65 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadLive() {
-        val creds = requireCreds() ?: return
+    /**
+     * نمط "اعرض القديم فورًا، وحدّث بالخلفية": إن وُجدت نسخة محفوظة محليًا،
+     * تُعرض فورًا دون انتظار الشبكة، ثم يجري تحديث حقيقي من السيرفر في الخلفية
+     * ويستبدل المعروض عند اكتماله (فقط إن كان المستخدم لا يزال في نفس التبويب).
+     * إن فشل التحديث ولدينا نسخة محفوظة، نتجاهل الخطأ بصمت (تبقى البيانات القديمة
+     * ظاهرة بدل نافذة خطأ مزعجة)؛ أما إن لم تكن هناك نسخة محفوظة أصلاً فنعرض الخطأ كالمعتاد.
+     */
+    private fun loadWithCache(
+        cacheKey: String,
+        targetTab: Int,
+        fetchFresh: suspend () -> List<MediaEntry>
+    ) {
         binding.progressBar.visibility = View.VISIBLE
         lifecycleScope.launch {
+            val cached = withContext(Dispatchers.IO) { cacheManager.load(cacheKey) }
+            if (cached != null && currentTab == targetTab) {
+                displayMedia(cached)
+                binding.progressBar.visibility = View.GONE
+            }
+
             try {
-                val items = withContext(Dispatchers.IO) {
-                    val categories = XtreamClient.fetchLiveCategories(creds.first, creds.second, creds.third)
-                    XtreamClient.fetchLive(creds.first, creds.second, creds.third, categories)
+                val fresh = withContext(Dispatchers.IO) { fetchFresh() }
+                withContext(Dispatchers.IO) { cacheManager.save(cacheKey, fresh) }
+                if (currentTab == targetTab) {
+                    displayMedia(fresh)
                 }
-                displayMedia(items)
             } catch (e: Exception) {
-                showLoadErrorDialog(e)
+                if (cached == null) {
+                    showLoadErrorDialog(e)
+                } else if (currentTab == targetTab) {
+                    Toast.makeText(this@MainActivity, "تعذّر التحديث، تُعرض آخر بيانات محفوظة", Toast.LENGTH_SHORT).show()
+                }
             } finally {
                 binding.progressBar.visibility = View.GONE
             }
+        }
+    }
+
+    private fun loadLive() {
+        val creds = requireCreds() ?: return
+        loadWithCache(MediaCacheManager.KEY_LIVE, 1) {
+            val categories = XtreamClient.fetchLiveCategories(creds.first, creds.second, creds.third)
+            XtreamClient.fetchLive(creds.first, creds.second, creds.third, categories)
         }
     }
 
     private fun loadVod() {
         val creds = requireCreds() ?: return
-        binding.progressBar.visibility = View.VISIBLE
-        lifecycleScope.launch {
-            try {
-                val items = withContext(Dispatchers.IO) {
-                    val categories = XtreamClient.fetchVodCategories(creds.first, creds.second, creds.third)
-                    XtreamClient.fetchVod(creds.first, creds.second, creds.third, categories)
-                }
-                displayMedia(items)
-            } catch (e: Exception) {
-                showLoadErrorDialog(e)
-            } finally {
-                binding.progressBar.visibility = View.GONE
-            }
+        loadWithCache(MediaCacheManager.KEY_VOD, 2) {
+            val categories = XtreamClient.fetchVodCategories(creds.first, creds.second, creds.third)
+            XtreamClient.fetchVod(creds.first, creds.second, creds.third, categories)
         }
     }
 
     private fun loadSeries() {
         val creds = requireCreds() ?: return
-        binding.progressBar.visibility = View.VISIBLE
-        lifecycleScope.launch {
-            try {
-                val items = withContext(Dispatchers.IO) {
-                    val categories = XtreamClient.fetchSeriesCategories(creds.first, creds.second, creds.third)
-                    XtreamClient.fetchSeriesList(creds.first, creds.second, creds.third, categories)
-                }
-                displayMedia(items)
-            } catch (e: Exception) {
-                showLoadErrorDialog(e)
-            } finally {
-                binding.progressBar.visibility = View.GONE
-            }
+        loadWithCache(MediaCacheManager.KEY_SERIES, 3) {
+            val categories = XtreamClient.fetchSeriesCategories(creds.first, creds.second, creds.third)
+            XtreamClient.fetchSeriesList(creds.first, creds.second, creds.third, categories)
         }
     }
 
