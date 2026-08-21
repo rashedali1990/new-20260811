@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         const val HERO_BANNER_INTERVAL_MS = 4500L
         const val OTHER_CATEGORY = "أخرى"
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "SOCKS5-10"
+        const val BUILD_TAG = "1.1.0"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -87,14 +87,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.textBuildInfo.text = "build $BUILD_TAG"
-        Toast.makeText(this, "🔧 نسخة التطبيق: $BUILD_TAG", Toast.LENGTH_LONG).show()
-
-        // تشخيص متقدم: اضغط مطوّلاً على عدّاد العناصر لعرض تقرير خام عن سلوك السيرفر
-        binding.textContentCount.setOnLongClickListener {
-            runSeriesDiagnostics()
-            true
-        }
+        binding.textBuildInfo.text = "v$BUILD_TAG"
 
         binding.editSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -524,46 +517,6 @@ class MainActivity : AppCompatActivity() {
         allMediaItems.addAll(items)
         updateCategoriesChips(items)
         filterItems("")
-    }
-
-    private fun runSeriesDiagnostics() {
-        val creds = requireCreds() ?: return
-        val progressDialog = androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("جاري التشخيص...")
-            .setMessage("يرجى الانتظار، يتم اختبار السيرفر بعدة طرق")
-            .setCancelable(false)
-            .show()
-
-        lifecycleScope.launch {
-            val report = try {
-                withContext(Dispatchers.IO) {
-                    XtreamClient.diagnoseSeriesFetch(creds.first, creds.second, creds.third)
-                }
-            } catch (e: Exception) {
-                "فشل التشخيص: ${e.message}"
-            }
-            progressDialog.dismiss()
-
-            val scrollView = android.widget.ScrollView(this@MainActivity)
-            val textView = android.widget.TextView(this@MainActivity).apply {
-                text = report
-                setPadding(32, 24, 32, 24)
-                textSize = 12f
-            }
-            textView.setTextIsSelectable(true)
-            scrollView.addView(textView)
-
-            androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
-                .setTitle("تقرير تشخيص المسلسلات")
-                .setView(scrollView)
-                .setPositiveButton("نسخ التقرير") { _, _ ->
-                    val clipboard = getSystemService(CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    clipboard.setPrimaryClip(android.content.ClipData.newPlainText("تقرير التشخيص", report))
-                    Toast.makeText(this@MainActivity, "تم نسخ التقرير", Toast.LENGTH_SHORT).show()
-                }
-                .setNegativeButton("إغلاق", null)
-                .show()
-        }
     }
 
     private fun showLoadErrorDialog(e: Exception) {
