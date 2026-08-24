@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         const val HERO_BANNER_INTERVAL_MS = 4500L
         const val OTHER_CATEGORY = "أخرى"
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "1.1.0"
+        const val BUILD_TAG = "1.2.0"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -291,7 +291,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateAdapter(items: List<MediaEntry>) {
         // Movies (2) and Series (3) use top-aligned grid view
         if (currentTab == 2 || currentTab == 3) {
-            binding.recyclerContent.layoutManager = GridLayoutManager(this, 3).apply {
+            binding.recyclerContent.layoutManager = GridLayoutManager(this, calculateGridSpanCount()).apply {
                 spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
                     override fun getSpanSize(position: Int): Int = 1
                 }
@@ -397,12 +397,12 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                binding.recyclerLatestMovies.layoutManager = GridLayoutManager(this@MainActivity, 4)
+                binding.recyclerLatestMovies.layoutManager = GridLayoutManager(this@MainActivity, calculateGridSpanCount())
                 binding.recyclerLatestMovies.adapter = PosterAdapter(items = movies.take(12), onClick = { entry ->
                     handleMediaClickAutoPlay(entry)
                 })
 
-                binding.recyclerLatestSeries.layoutManager = GridLayoutManager(this@MainActivity, 4)
+                binding.recyclerLatestSeries.layoutManager = GridLayoutManager(this@MainActivity, calculateGridSpanCount())
                 binding.recyclerLatestSeries.adapter = PosterAdapter(items = series.take(12), onClick = { entry ->
                     handleMediaClickAutoPlay(entry)
                 })
@@ -525,6 +525,19 @@ class MainActivity : AppCompatActivity() {
             .setMessage(getString(R.string.load_error, e.message ?: "خطأ غير معروف"))
             .setPositiveButton("حسنًا", null)
             .show()
+    }
+
+    /**
+     * عدد أعمدة الشبكة يتكيّف مع عرض الشاشة الفعلي (بالـ dp) بدل رقم ثابت،
+     * حتى تُستغل الشاشات الكبيرة جدًا (مثل Galaxy S25 Ultra) جيدًا بدل ترك
+     * مساحات فارغة، وتبقى الشاشات الأصغر مناسبة أيضًا بعدد أعمدة أقل.
+     * حجم البطاقة المستهدف ~105dp (يطابق عرض item_media_poster.xml).
+     */
+    private fun calculateGridSpanCount(): Int {
+        val screenWidthDp = resources.configuration.screenWidthDp
+        val targetCardWidthDp = 105
+        val spanCount = (screenWidthDp / targetCardWidthDp).coerceIn(3, 7)
+        return spanCount
     }
 
     private fun requireCreds(): Triple<String, String, String>? {
