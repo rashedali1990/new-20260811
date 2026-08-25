@@ -76,122 +76,6 @@ class PlayerActivity : AppCompatActivity() {
         binding.buttonPlayerSettings.setOnClickListener {
             showPlayerSettingsMenu()
         }
-
-        binding.buttonPlayerVoiceStt.setOnClickListener {
-            showLanguageSelectionDialog()
-        }
-
-        setupPlayerSpeechRecognizer()
-    }
-
-    private var speechRecognizer: android.speech.SpeechRecognizer? = null
-    private var speechRecognizerIntent: android.content.Intent? = null
-
-    private fun setupPlayerSpeechRecognizer() {
-        if (android.speech.SpeechRecognizer.isRecognitionAvailable(this)) {
-            speechRecognizer = android.speech.SpeechRecognizer.createSpeechRecognizer(this)
-            speechRecognizerIntent = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "ar-SA")
-                putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "تحدث للترجمة أو البحث الفوري...")
-            }
-
-            speechRecognizer?.setRecognitionListener(object : android.speech.RecognitionListener {
-                override fun onReadyForSpeech(params: Bundle?) {}
-                override fun onBeginningOfSpeech() {}
-                override fun onRmsChanged(rmsdB: Float) {}
-                override fun onBufferReceived(buffer: ByteArray?) {}
-                override fun onEndOfSpeech() {}
-                override fun onError(error: Int) {}
-                override fun onResults(results: Bundle?) {
-                    val matches = results?.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION)
-                    if (!matches.isNullOrEmpty()) {
-                        val spokenText = matches[0]
-                        binding.textPlayerSubtitle.visibility = android.view.View.VISIBLE
-                        binding.textPlayerSubtitle.text = spokenText
-                        
-                        // Hide subtitle after 5 seconds
-                        binding.textPlayerSubtitle.postDelayed({
-                            binding.textPlayerSubtitle.visibility = android.view.View.GONE
-                        }, 5000)
-                    }
-                }
-                override fun onPartialResults(partialResults: Bundle?) {
-                    val matches = partialResults?.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION)
-                    if (!matches.isNullOrEmpty()) {
-                        binding.textPlayerSubtitle.visibility = android.view.View.VISIBLE
-                        binding.textPlayerSubtitle.text = matches[0]
-                    }
-                }
-                override fun onEvent(eventType: Int, params: Bundle?) {}
-            })
-        }
-    }
-
-    private fun showLanguageSelectionDialog() {
-        val languages = arrayOf(
-            "العربية (Arabic)",
-            "اللغة الكورية (Korean - 한국어)",
-            "اللغة الصينية (Chinese - 中文)",
-            "اللغة الإنجليزية (English)"
-        )
-        val codes = arrayOf("ar-SA", "ko-KR", "zh-CN", "en-US")
-
-        AlertDialog.Builder(this)
-            .setTitle("اختر لغة الحديث للترجمة الفورية")
-            .setItems(languages) { _, which ->
-                val selectedLang = codes[which]
-                startPlayerVoiceRecognition(selectedLang, languages[which])
-            }
-            .show()
-    }
-
-    private fun startPlayerVoiceRecognition(languageCode: String, langName: String) {
-        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            androidx.core.app.ActivityCompat.requestPermissions(this, arrayOf(android.Manifest.permission.RECORD_AUDIO), 101)
-            return
-        }
-        try {
-            speechRecognizer?.destroy()
-            speechRecognizer = android.speech.SpeechRecognizer.createSpeechRecognizer(this)
-            val intent = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, languageCode)
-                putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "تحدث باللغة المحددة للترجمة...")
-            }
-
-            speechRecognizer?.setRecognitionListener(object : android.speech.RecognitionListener {
-                override fun onReadyForSpeech(params: Bundle?) {}
-                override fun onBeginningOfSpeech() {}
-                override fun onRmsChanged(rmsdB: Float) {}
-                override fun onBufferReceived(buffer: ByteArray?) {}
-                override fun onEndOfSpeech() {}
-                override fun onError(error: Int) {}
-                override fun onResults(results: Bundle?) {
-                    val matches = results?.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION)
-                    if (!matches.isNullOrEmpty()) {
-                        binding.textPlayerSubtitle.visibility = android.view.View.VISIBLE
-                        binding.textPlayerSubtitle.text = matches[0]
-                        binding.textPlayerSubtitle.postDelayed({
-                            binding.textPlayerSubtitle.visibility = android.view.View.GONE
-                        }, 5000)
-                    }
-                }
-                override fun onPartialResults(partialResults: Bundle?) {
-                    val matches = partialResults?.getStringArrayList(android.speech.SpeechRecognizer.RESULTS_RECOGNITION)
-                    if (!matches.isNullOrEmpty()) {
-                        binding.textPlayerSubtitle.visibility = android.view.View.VISIBLE
-                        binding.textPlayerSubtitle.text = matches[0]
-                    }
-                }
-                override fun onEvent(eventType: Int, params: Bundle?) {}
-            })
-
-            speechRecognizer?.startListening(intent)
-            Toast.makeText(this, "جاري الاستماع ($langName) للترجمة للعربية...", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "تعذر تشغيل التعرف الصوتي", Toast.LENGTH_SHORT).show()
-        }
     }
 
     // ─── ملء الشاشة الغامر (Immersive Full Screen) ────────────────────────────
@@ -404,8 +288,6 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        speechRecognizer?.destroy()
-        speechRecognizer = null
         player?.release()
         player = null
     }

@@ -59,29 +59,6 @@ class MainActivity : AppCompatActivity() {
     private val heroBannerHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var heroBannerRunnable: Runnable? = null
 
-    // Speech recognizer moved to player as requested
-
-    private val voiceSearchLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            val spokenText = result.data
-                ?.getStringArrayListExtra(android.speech.RecognizerIntent.EXTRA_RESULTS)
-                ?.getOrNull(0)
-            spokenText?.let {
-                filterItems(it)
-            }
-        }
-    }
-
-    private val requestPermissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        if (!isGranted) {
-            Toast.makeText(this, "يلزم السماح بالوصول للميكروفون لاستخدام البحث الصوتي", Toast.LENGTH_LONG).show()
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -135,12 +112,6 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, SettingsActivity::class.java))
         }
 
-        // Voice search button removed from home toolbar
-
-        // Category STT button removed
-
-        // Search and continuous speech recognizer removed as requested
-
         intent.getStringExtra("extra_manual_url")?.let { url ->
             loadManualPlaylist(url)
         }
@@ -160,24 +131,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         showTab(0)
-    }
-
-    private fun launchVoiceSearch() {
-        if (androidx.core.content.ContextCompat.checkSelfPermission(this, android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-            requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
-            return
-        }
-        try {
-            val intent = Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                    android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE, "ar-SA")
-                putExtra(android.speech.RecognizerIntent.EXTRA_PROMPT, "تحدث للبحث الفوري أو الترجمة...")
-            }
-            voiceSearchLauncher.launch(intent)
-        } catch (e: Exception) {
-            Toast.makeText(this, "التعرف الصوتي غير متوفر على هذا الجهاز", Toast.LENGTH_SHORT).show()
-        }
     }
 
     private var currentTab = 0

@@ -40,37 +40,4 @@
         app:tint="#FFFFFF"
         android:alpha="0.8" />
 
-    <!-- Speech Recognition / Voice Translation Button at Top -->
-    <ImageButton
-        android:id="@+id/buttonPlayerVoiceStt"
-        android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_alignParentTop="true"
-        android:layout_toLeftOf="@id/buttonPlayerSettings"
-        android:layout_margin="16dp"
-        android:background="?attr/selectableItemBackgroundBorderless"
-        android:src="@android:drawable/ic_btn_speak_now"
-        android:contentDescription="التعرف الصوتي والترجمة"
-        app:tint="#FFEB3B"
-        android:alpha="0.9" />
-
-    <!-- Real-time Subtitles / Recognized Text at Bottom (Yellow color, 12sp) -->
-    <TextView
-        android:id="@+id/textPlayerSubtitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_marginBottom="36dp"
-        android:layout_marginStart="24dp"
-        android:layout_marginEnd="24dp"
-        android:gravity="center"
-        android:textColor="#FFEB3B"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        android:shadowColor="#000000"
-        android:shadowDx="1"
-        android:shadowDy="1"
-        android:shadowRadius="3"
-        android:visibility="gone" />
-
 </RelativeLayout>
