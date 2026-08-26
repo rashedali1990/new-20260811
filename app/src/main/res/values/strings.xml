@@ -52,4 +52,11 @@
     <string name="manual_url_hint">M3U File URL</string>
     <string name="load_manual_url">Load and play from URL</string>
     <string name="pick_manual_file">Pick M3U file from device</string>
+
+    <string name="add_external_subtitle">Add Subtitle</string>
+    <string name="subtitle_from_url">From a link (URL)</string>
+    <string name="subtitle_from_device">From a device file</string>
+    <string name="subtitle_url_hint">Subtitle file link (.srt or .vtt)</string>
+    <string name="add_subtitle_confirm">Add</string>
+    <string name="subtitle_added">Subtitle added</string>
 </resources>

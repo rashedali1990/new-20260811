@@ -52,4 +52,11 @@
     <string name="manual_url_hint">رابط ملف M3U URL</string>
     <string name="load_manual_url">تحميل وتشغيل من الرابط</string>
     <string name="pick_manual_file">اختيار ملف M3U من الجهاز</string>
+
+    <string name="add_external_subtitle">إضافة ترجمة</string>
+    <string name="subtitle_from_url">من رابط (URL)</string>
+    <string name="subtitle_from_device">من ملف على الجهاز</string>
+    <string name="subtitle_url_hint">رابط ملف الترجمة (.srt أو .vtt)</string>
+    <string name="add_subtitle_confirm">إضافة</string>
+    <string name="subtitle_added">تمت إضافة الترجمة</string>
 </resources>

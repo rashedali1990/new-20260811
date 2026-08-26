@@ -1,8 +1,11 @@
 package com.example.m3uplayer
 
 import android.content.pm.ActivityInfo
+import android.net.Uri
 import android.os.Bundle
+import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -11,15 +14,19 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.TrackGroup
 import androidx.media3.common.TrackSelectionOverride
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
+import androidx.media3.exoplayer.source.MergingMediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.exoplayer.source.SingleSampleMediaSource
 import com.example.m3uplayer.databinding.ActivityPlayerBinding
 import java.net.InetSocketAddress
 import java.net.Proxy
@@ -38,10 +45,24 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityPlayerBinding
     private var player: ExoPlayer? = null
     private lateinit var historyManager: WatchHistoryManager
+    private var dataSourceFactory: DataSource.Factory? = null
 
     private var streamUrl: String = ""
     private var streamName: String = ""
     private var streamId: String = ""
+
+    private val subtitleFilePickerLauncher = registerForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri: Uri? ->
+        uri?.let {
+            try {
+                contentResolver.takePersistableUriPermission(
+                    it, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+                )
+            } catch (e: Exception) { /* ليست كل مزوّدات الملفات تدعم صلاحية دائمة، لا بأس بتجاهل الخطأ */ }
+            applyExternalSubtitle(it, guessSubtitleMimeType(it.toString()))
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,7 +122,8 @@ class PlayerActivity : AppCompatActivity() {
         val options = arrayOf(
             getString(R.string.quality_selection),
             getString(R.string.audio_track),
-            getString(R.string.subtitle_track)
+            getString(R.string.subtitle_track),
+            getString(R.string.add_external_subtitle)
         )
         AlertDialog.Builder(this)
             .setTitle(R.string.player_settings)
@@ -110,9 +132,94 @@ class PlayerActivity : AppCompatActivity() {
                     0 -> showTrackOptions(C.TRACK_TYPE_VIDEO, getString(R.string.quality_selection))
                     1 -> showTrackOptions(C.TRACK_TYPE_AUDIO, getString(R.string.audio_track))
                     2 -> showTrackOptions(C.TRACK_TYPE_TEXT, getString(R.string.subtitle_track))
+                    3 -> showAddSubtitleDialog()
                 }
             }
             .show()
+    }
+
+    // ─── إضافة ترجمة خارجية (Caption) ──────────────────────────────────────────
+
+    private fun showAddSubtitleDialog() {
+        val options = arrayOf(
+            getString(R.string.subtitle_from_url),
+            getString(R.string.subtitle_from_device)
+        )
+        AlertDialog.Builder(this)
+            .setTitle(R.string.add_external_subtitle)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showSubtitleUrlInputDialog()
+                    1 -> subtitleFilePickerLauncher.launch(arrayOf("text/*", "application/*", "application/x-subrip"))
+                }
+            }
+            .show()
+    }
+
+    private fun showSubtitleUrlInputDialog() {
+        val input = EditText(this).apply {
+            hint = getString(R.string.subtitle_url_hint)
+            setSingleLine(true)
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.subtitle_from_url)
+            .setView(input)
+            .setPositiveButton(R.string.add_subtitle_confirm) { _, _ ->
+                val url = input.text.toString().trim()
+                if (url.isNotEmpty()) {
+                    applyExternalSubtitle(Uri.parse(url), guessSubtitleMimeType(url))
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun guessSubtitleMimeType(pathOrUrl: String): String = when {
+        pathOrUrl.contains(".vtt", ignoreCase = true)  -> MimeTypes.TEXT_VTT
+        pathOrUrl.contains(".ttml", ignoreCase = true) ||
+        pathOrUrl.contains(".xml", ignoreCase = true)  -> MimeTypes.APPLICATION_TTML
+        else -> MimeTypes.APPLICATION_SUBRIP // SRT هو الأشيع، ونعتمده افتراضيًا
+    }
+
+    /**
+     * يدمج ملف ترجمة خارجي (SRT/VTT، من رابط أو من الجهاز) مع مصدر الفيديو الحالي
+     * عبر MergingMediaSource، مع الحفاظ على موضع التشغيل الحالي دون انقطاع محسوس.
+     */
+    private fun applyExternalSubtitle(uri: Uri, mimeType: String) {
+        val exoPlayer = player ?: return
+        val baseFactory = dataSourceFactory ?: return
+        // مصدر بيانات يدعم كلاً من الروابط (http/https) والملفات المحلية (content://)،
+        // بعكس مصدر الفيديو الذي يفترض رابطًا شبكيًا دائمًا
+        val subtitleDataSourceFactory = DefaultDataSource.Factory(this, baseFactory)
+
+        val resumePosition = exoPlayer.currentPosition
+
+        val videoMediaItem = MediaItem.fromUri(streamUrl)
+        val videoSource: MediaSource = when {
+            streamUrl.contains(".m3u8", ignoreCase = true) ||
+            streamUrl.contains("/live/",  ignoreCase = true) ->
+                HlsMediaSource.Factory(baseFactory).createMediaSource(videoMediaItem)
+            else ->
+                ProgressiveMediaSource.Factory(baseFactory).createMediaSource(videoMediaItem)
+        }
+
+        val subtitleConfig = MediaItem.SubtitleConfiguration.Builder(uri)
+            .setMimeType(mimeType)
+            .setLanguage("ar")
+            .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
+            .build()
+
+        val subtitleSource = SingleSampleMediaSource.Factory(subtitleDataSourceFactory)
+            .createMediaSource(subtitleConfig, C.TIME_UNSET)
+
+        val mergedSource = MergingMediaSource(videoSource, subtitleSource)
+
+        exoPlayer.setMediaSource(mergedSource)
+        exoPlayer.prepare()
+        exoPlayer.seekTo(resumePosition)
+        exoPlayer.playWhenReady = true
+
+        Toast.makeText(this, R.string.subtitle_added, Toast.LENGTH_SHORT).show()
     }
 
     private fun showTrackOptions(trackType: Int, title: String) {
@@ -244,6 +351,7 @@ class PlayerActivity : AppCompatActivity() {
         startPosition: Long,
         dataSourceFactory: DataSource.Factory
     ) {
+        this.dataSourceFactory = dataSourceFactory
         val mediaItem = MediaItem.fromUri(streamUrl)
 
         val mediaSource: MediaSource = when {
