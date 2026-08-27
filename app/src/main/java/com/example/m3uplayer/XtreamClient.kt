@@ -67,11 +67,38 @@ object XtreamClient {
         return if (action != null) "$base&action=$action" else base
     }
 
+    /** يُطلق عند اكتشاف أن استجابة السيرفر هي صفحة تحدي Cloudflare وليست البيانات الفعلية. */
+    class CloudflareChallengeException(val rayId: String?) :
+        Exception("الخادم محمي بواسطة Cloudflare ويطلب تحقق أمان إضافي" + (rayId?.let { " (Ray ID: $it)" } ?: ""))
+
+    /** فحص سريع لعلامات شائعة تدل أن المحتوى صفحة تحدي Cloudflare وليس JSON فعليًا. */
+    private fun detectCloudflareChallenge(body: String): CloudflareChallengeException? {
+        val sample = body.take(2000) // فحص بداية النص كافٍ، لا حاجة لفحص كامل استجابة كبيرة
+        val isChallenge = sample.contains("Just a moment", ignoreCase = true) ||
+            sample.contains("cf-browser-verification") ||
+            sample.contains("cf_chl_", ignoreCase = true) ||
+            sample.contains("Attention Required! | Cloudflare", ignoreCase = true) ||
+            sample.contains("Checking your browser before accessing", ignoreCase = true)
+
+        if (!isChallenge) return null
+
+        val rayId = Regex("Ray ID:\\s*<[^>]*>?\\s*([a-f0-9]+)", RegexOption.IGNORE_CASE)
+            .find(sample)?.groupValues?.getOrNull(1)
+        return CloudflareChallengeException(rayId)
+    }
+
     private fun fetchJson(url: String): String {
         val request = Request.Builder().url(url).build()
         httpClient.newCall(request).execute().use { response ->
+            val body = response.body?.string().orEmpty()
+
+            // بعض سيرفرات Xtream تقف خلف Cloudflare وقد تُرجع صفحة تحدٍ (HTML) بدل JSON،
+            // خصوصًا عند حظر السيرفر لطلبات تبدو آلية. نكتشف هذا بوضوح بدل ترك خطأ
+            // "تحليل JSON فشل" غامض يصعب على المستخدم فهمه.
+            detectCloudflareChallenge(body)?.let { throw it }
+
             if (!response.isSuccessful) throw Exception("رمز الاستجابة: ${response.code}")
-            return response.body?.string().orEmpty()
+            return body
         }
     }
 
@@ -244,6 +271,8 @@ object XtreamClient {
             val url = "$baseUrl&page=$page&limit=$pageSize"
             val items = try {
                 parse(fetchJson(url))
+            } catch (e: CloudflareChallengeException) {
+                throw e // لا نُخفي هذا الخطأ: يجب أن يصل المستخدم برسالة واضحة
             } catch (e: Exception) {
                 break
             }

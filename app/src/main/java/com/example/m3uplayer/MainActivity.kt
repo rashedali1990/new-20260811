@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         const val HERO_BANNER_INTERVAL_MS = 4500L
         const val OTHER_CATEGORY = "أخرى"
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "1.3.0"
+        const val BUILD_TAG = "1.4.0"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -473,6 +473,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showLoadErrorDialog(e: Exception) {
+        if (e is XtreamClient.CloudflareChallengeException) {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("السيرفر يطلب تحقق أمان (Cloudflare)")
+                .setMessage(
+                    "سيرفر مزوّد الخدمة محمي بواسطة Cloudflare، وقد رصد الطلب كحركة آلية بدل متصفح حقيقي.\n\n" +
+                    "هذا ليس عطلًا في التطبيق، وغالبًا ما يكون مؤقتًا. جرّب:\n" +
+                    "• الانتظار قليلًا ثم إعادة المحاولة\n" +
+                    "• تغيير الشبكة (بيانات الجوال بدل واي فاي أو العكس)\n" +
+                    "• التواصل مع مزوّد الاشتراك إن استمرت المشكلة" +
+                    (e.rayId?.let { "\n\nRay ID: $it" } ?: "")
+                )
+                .setPositiveButton("حسنًا", null)
+                .show()
+            return
+        }
+
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("تعذّر تحميل المحتوى")
             .setMessage(getString(R.string.load_error, e.message ?: "خطأ غير معروف"))
