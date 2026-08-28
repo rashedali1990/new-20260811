@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
         const val HERO_BANNER_INTERVAL_MS = 4500L
         const val OTHER_CATEGORY = "أخرى"
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "1.4.0"
+        const val BUILD_TAG = "1.5.0"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -54,6 +54,8 @@ class MainActivity : AppCompatActivity() {
     private var allMediaItems = mutableListOf<MediaEntry>()
     private var currentCategories = listOf<String>()
     private var selectedCategory: String = "الكل"
+    private var selectedYear: String = "الكل"
+    private var selectedQuality: String = "الكل"
 
     // البانر المميز: تمرير تلقائي كل 4.5 ثانية
     private val heroBannerHandler = android.os.Handler(android.os.Looper.getMainLooper())
@@ -138,6 +140,8 @@ class MainActivity : AppCompatActivity() {
     private fun showTab(position: Int) {
         currentTab = position
         selectedCategory = "الكل" // إعادة ضبط الفلتر عند كل تبديل تبويب (كان يبقى من التبويب السابق ويُخفي أغلب المحتوى)
+        selectedYear = "الكل"
+        selectedQuality = "الكل"
         if (binding.editSearch.text.isNotEmpty()) {
             binding.editSearch.setText("") // نفس السبب: نص بحث عالق من تبويب سابق كان سيُخفي أغلب المحتوى هنا أيضًا
         }
@@ -184,8 +188,11 @@ class MainActivity : AppCompatActivity() {
                 OTHER_CATEGORY -> item.groupTitle.isNullOrBlank()
                 else -> item.groupTitle.equals(selectedCategory, ignoreCase = true)
             }
+            val matchesYear = selectedYear == "الكل" || extractYear(item.title) == selectedYear
+            val matchesQuality = selectedQuality == "الكل" ||
+                extractQuality(item.title).equals(selectedQuality, ignoreCase = true)
             val matchesFavorite = currentTab != 4 || favoritesManager.isFavorite(item.id)
-            matchesQuery && matchesCategory && matchesFavorite
+            matchesQuery && matchesCategory && matchesYear && matchesQuality && matchesFavorite
         }
         updateContentCountText(filtered.size)
         updateAdapter(filtered)
@@ -469,6 +476,7 @@ class MainActivity : AppCompatActivity() {
         allMediaItems.clear()
         allMediaItems.addAll(items)
         updateCategoriesChips(items)
+        updateYearQualityFilterVisibility(items)
         filterItems("")
     }
 
@@ -502,6 +510,66 @@ class MainActivity : AppCompatActivity() {
      * مساحات فارغة، وتبقى الشاشات الأصغر مناسبة أيضًا بعدد أعمدة أقل.
      * حجم البطاقة المستهدف ~105dp (يطابق عرض item_media_poster.xml).
      */
+    /**
+     * استخراج سنة الإصدار من عنوان العمل (سيرفرات Xtream عادةً لا تُرسل حقل "سنة"
+     * منفصلاً في قائمة الأفلام/المسلسلات، لكن أغلب المزوّدين يضيفونها ضمن الاسم
+     * نفسه مثل "اسم الفيلم (2023)"). النتيجة تقريبية وتعتمد على تسمية المزوّد.
+     */
+    private fun extractYear(title: String): String? {
+        val match = Regex("\\((19|20)\\d{2}\\)").find(title)
+            ?: Regex("\\b(19|20)\\d{2}\\b").find(title)
+        return match?.value?.trim('(', ')')
+    }
+
+    /** استخراج وسم الجودة من العنوان إن وُجد (نفس منطق سبب عدم وجود حقل مخصص). */
+    private fun extractQuality(title: String): String? {
+        val qualityPatterns = listOf("4K", "2160p", "1080p", "720p", "480p", "HD", "SD", "CAM")
+        return qualityPatterns.firstOrNull { title.contains(it, ignoreCase = true) }
+    }
+
+    /** ترتيب منطقي لعرض خيارات الجودة (الأعلى أولاً) بدل الترتيب الأبجدي العشوائي. */
+    private fun qualitySortOrder(quality: String): Int {
+        val order = listOf("4K", "2160p", "1080p", "720p", "480p", "HD", "SD", "CAM")
+        val index = order.indexOfFirst { it.equals(quality, ignoreCase = true) }
+        return if (index == -1) order.size else index
+    }
+
+    private fun updateYearQualityFilterVisibility(items: List<MediaEntry>) {
+        val isMoviesOrSeries = currentTab == 2 || currentTab == 3
+        binding.layoutYearQualityFilter.visibility = if (isMoviesOrSeries) View.VISIBLE else View.GONE
+        if (!isMoviesOrSeries) return
+
+        val years = items.mapNotNull { extractYear(it.title) }.toSortedSet(compareByDescending { it })
+        val qualities = items.mapNotNull { extractQuality(it.title) }.toSortedSet(compareBy { qualitySortOrder(it) })
+
+        binding.buttonFilterYear.text = "السنة: $selectedYear"
+        binding.buttonFilterQuality.text = "الجودة: $selectedQuality"
+
+        binding.buttonFilterYear.setOnClickListener {
+            val options = (listOf("الكل") + years).toTypedArray()
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("اختر السنة")
+                .setItems(options) { _, which ->
+                    selectedYear = options[which]
+                    binding.buttonFilterYear.text = "السنة: $selectedYear"
+                    filterItems(binding.editSearch.text?.toString())
+                }
+                .show()
+        }
+
+        binding.buttonFilterQuality.setOnClickListener {
+            val options = (listOf("الكل") + qualities).toTypedArray()
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("اختر الجودة")
+                .setItems(options) { _, which ->
+                    selectedQuality = options[which]
+                    binding.buttonFilterQuality.text = "الجودة: $selectedQuality"
+                    filterItems(binding.editSearch.text?.toString())
+                }
+                .show()
+        }
+    }
+
     private fun calculateGridSpanCount(): Int {
         val screenWidthDp = resources.configuration.screenWidthDp
         val targetCardWidthDp = 105
