@@ -7,10 +7,17 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.lifecycle.lifecycleScope
 import com.example.m3uplayer.databinding.ActivitySettingsBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
 import java.util.Locale
 
 class SettingsActivity : AppCompatActivity() {
@@ -18,6 +25,10 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var profileManager: ProfileManager
     private lateinit var backupManager: BackupManager
     private val httpClient = OkHttpClient()
+
+    companion object {
+        private const val UPDATE_REPO = "rashedali1990/new-20260811"
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -158,6 +169,85 @@ class SettingsActivity : AppCompatActivity() {
         binding.buttonImportBackup.setOnClickListener {
             importLauncher.launch(arrayOf("application/json"))
         }
+
+        binding.textCurrentVersion.text = "الإصدار الحالي: ${MainActivity.BUILD_TAG}"
+        binding.buttonCheckUpdate.setOnClickListener {
+            checkForUpdate()
+        }
+    }
+
+    /**
+     * يتحقق من إصدار GitHub Release المنشور تحت العلامة الثابتة "latest" (يُحدَّثها
+     * سير عمل CI تلقائيًا مع كل دفع ناجح لـ main)، ويقارن رقم الإصدار المُضمَّن في
+     * اسم/وصف الإصدار بالإصدار المحلي الحالي (MainActivity.BUILD_TAG).
+     */
+    private fun checkForUpdate() {
+        binding.buttonCheckUpdate.isEnabled = false
+        binding.buttonCheckUpdate.text = "جاري التحقق..."
+
+        lifecycleScope.launch {
+            try {
+                val (remoteVersion, downloadUrl) = withContext(Dispatchers.IO) {
+                    val request = Request.Builder()
+                        .url("https://api.github.com/repos/$UPDATE_REPO/releases/tags/latest")
+                        .header("User-Agent", "M3UPlayer-UpdateChecker")
+                        .header("Accept", "application/vnd.github+json")
+                        .build()
+
+                    httpClient.newCall(request).execute().use { response ->
+                        if (!response.isSuccessful) {
+                            throw Exception("تعذّر الاتصال بخادم التحديثات (رمز: ${response.code})")
+                        }
+                        val json = JSONObject(response.body?.string().orEmpty())
+                        val body = json.optString("body")
+                        val version = Regex("APP_VERSION=(\\S+)").find(body)?.groupValues?.getOrNull(1)
+                            ?: json.optString("name").removePrefix("الإصدار ").trim()
+
+                        val assets = json.optJSONArray("assets")
+                        var apkUrl: String? = null
+                        if (assets != null) {
+                            for (i in 0 until assets.length()) {
+                                val asset = assets.getJSONObject(i)
+                                if (asset.optString("name").endsWith(".apk")) {
+                                    apkUrl = asset.optString("browser_download_url")
+                                    break
+                                }
+                            }
+                        }
+                        version to apkUrl
+                    }
+                }
+
+                if (downloadUrl.isNullOrBlank()) {
+                    Toast.makeText(this@SettingsActivity, "لم يُعثر على ملف تحديث في الإصدار الأخير", Toast.LENGTH_SHORT).show()
+                } else if (remoteVersion.isNotBlank() && remoteVersion != MainActivity.BUILD_TAG) {
+                    showUpdateAvailableDialog(remoteVersion, downloadUrl)
+                } else {
+                    Toast.makeText(this@SettingsActivity, "أنت تستخدم أحدث إصدار بالفعل", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@SettingsActivity, "تعذّر التحقق من التحديث: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                binding.buttonCheckUpdate.isEnabled = true
+                binding.buttonCheckUpdate.text = "التحقق من وجود تحديث"
+            }
+        }
+    }
+
+    private fun showUpdateAvailableDialog(remoteVersion: String, downloadUrl: String) {
+        AlertDialog.Builder(this)
+            .setTitle("يتوفر تحديث جديد")
+            .setMessage(
+                "الإصدار الحالي: ${MainActivity.BUILD_TAG}\n" +
+                "الإصدار الجديد: $remoteVersion\n\n" +
+                "سيُفتح رابط التنزيل في المتصفح؛ بعد اكتمال التنزيل اضغط على الملف لتثبيت التحديث " +
+                "(قد يطلب الجهاز تفعيل \"السماح بالتثبيت من مصادر غير معروفة\")."
+            )
+            .setPositiveButton("تنزيل الآن") { _, _ ->
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(downloadUrl)))
+            }
+            .setNegativeButton("لاحقًا", null)
+            .show()
     }
 
     private fun setLocale(lang: String) {
