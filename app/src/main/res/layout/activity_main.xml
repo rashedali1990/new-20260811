@@ -224,118 +224,127 @@
             android:visibility="gone"
             android:padding="8dp">
 
-            <!-- شريط البحث -->
+            <!-- حاوية عناصر التحكم (البحث + التصنيفات + الفلاتر): تُخفى بالكامل عند
+                 التمرير لأسفل داخل recyclerContent لتحرير الشاشة كاملة للمحتوى -->
             <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="40dp"
-                android:layout_marginBottom="8dp"
-                android:background="@drawable/bg_search"
-                android:gravity="center_vertical"
-                android:orientation="horizontal"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp">
-
-                <ImageView
-                    android:layout_width="16dp"
-                    android:layout_height="16dp"
-                    android:contentDescription="بحث"
-                    android:src="@android:drawable/ic_menu_search"
-                    app:tint="@color/text_secondary" />
-
-                <EditText
-                    android:id="@+id/editSearch"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginStart="10dp"
-                    android:background="@null"
-                    android:hint="ابحث عن فيلم أو مسلسل أو قناة..."
-                    android:imeOptions="actionSearch"
-                    android:inputType="text"
-                    android:maxLines="1"
-                    android:textColor="@color/text_primary"
-                    android:textColorHint="@color/text_secondary"
-                    android:textSize="13sp" />
-
-                <ImageButton
-                    android:id="@+id/buttonClearSearch"
-                    android:layout_width="22dp"
-                    android:layout_height="22dp"
-                    android:background="@null"
-                    android:contentDescription="مسح البحث"
-                    android:src="@android:drawable/ic_menu_close_clear_cancel"
-                    android:visibility="gone"
-                    app:tint="@color/text_secondary" />
-            </LinearLayout>
-
-            <!-- صف واحد يجمع: العدد + التصنيفات + فلاتر السنة/الجودة (بدل 3 صفوف منفصلة
-                 كانت تستهلك مساحة رأسية كبيرة جدًا في الوضع الأفقي الدائم للشاشة) -->
-            <HorizontalScrollView
+                android:id="@+id/contentHeaderControls"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:scrollbars="none"
-                android:layout_marginBottom="8dp">
+                android:orientation="vertical">
 
+                <!-- شريط البحث -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="@drawable/bg_search"
                     android:gravity="center_vertical"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp">
 
-                    <TextView
-                        android:id="@+id/textContentCount"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="10dp"
-                        android:textColor="@color/text_secondary"
-                        android:textSize="11sp"
-                        tools:text="128 عنصر" />
+                    <ImageView
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:contentDescription="بحث"
+                        android:src="@android:drawable/ic_menu_search"
+                        app:tint="@color/text_secondary" />
 
-                    <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/chipGroupCategories"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        app:singleSelection="true"
-                        app:selectionRequired="true"
-                        app:chipSpacingHorizontal="4dp" />
+                    <EditText
+                        android:id="@+id/editSearch"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginStart="10dp"
+                        android:background="@null"
+                        android:hint="ابحث عن فيلم أو مسلسل أو قناة..."
+                        android:imeOptions="actionSearch"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:textColor="@color/text_primary"
+                        android:textColorHint="@color/text_secondary"
+                        android:textSize="13sp" />
+
+                    <ImageButton
+                        android:id="@+id/buttonClearSearch"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:background="@null"
+                        android:contentDescription="مسح البحث"
+                        android:src="@android:drawable/ic_menu_close_clear_cancel"
+                        android:visibility="gone"
+                        app:tint="@color/text_secondary" />
+                </LinearLayout>
+
+                <!-- صف واحد يجمع: العدد + التصنيفات + فلاتر السنة/الجودة (بدل 3 صفوف منفصلة
+                     كانت تستهلك مساحة رأسية كبيرة جدًا في الوضع الأفقي الدائم للشاشة) -->
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:scrollbars="none"
+                    android:layout_marginBottom="8dp">
 
                     <LinearLayout
-                        android:id="@+id/layoutYearQualityFilter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:orientation="horizontal"
-                        android:visibility="gone">
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/buttonFilterYear"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        <TextView
+                            android:id="@+id/textContentCount"
                             android:layout_width="wrap_content"
-                            android:layout_height="32dp"
-                            android:layout_marginEnd="6dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:minWidth="0dp"
-                            android:paddingStart="10dp"
-                            android:paddingEnd="10dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="10dp"
+                            android:textColor="@color/text_secondary"
                             android:textSize="11sp"
-                            android:text="السنة: الكل" />
+                            tools:text="128 عنصر" />
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/buttonFilterQuality"
-                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        <com.google.android.material.chip.ChipGroup
+                            android:id="@+id/chipGroupCategories"
                             android:layout_width="wrap_content"
-                            android:layout_height="32dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp"
-                            android:minWidth="0dp"
-                            android:paddingStart="10dp"
-                            android:paddingEnd="10dp"
-                            android:textSize="11sp"
-                            android:text="الجودة: الكل" />
+                            android:layout_height="wrap_content"
+                            app:singleSelection="true"
+                            app:selectionRequired="true"
+                            app:chipSpacingHorizontal="4dp" />
+
+                        <LinearLayout
+                            android:id="@+id/layoutYearQualityFilter"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:orientation="horizontal"
+                            android:visibility="gone">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/buttonFilterYear"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="32dp"
+                                android:layout_marginEnd="6dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:minWidth="0dp"
+                                android:paddingStart="10dp"
+                                android:paddingEnd="10dp"
+                                android:textSize="11sp"
+                                android:text="السنة: الكل" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/buttonFilterQuality"
+                                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="32dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp"
+                                android:minWidth="0dp"
+                                android:paddingStart="10dp"
+                                android:paddingEnd="10dp"
+                                android:textSize="11sp"
+                                android:text="الجودة: الكل" />
+                        </LinearLayout>
                     </LinearLayout>
-                </LinearLayout>
-            </HorizontalScrollView>
+                </HorizontalScrollView>
+            </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/recyclerContent"

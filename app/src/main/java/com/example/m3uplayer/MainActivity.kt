@@ -1,5 +1,6 @@
 package com.example.m3uplayer
 
+import android.animation.ValueAnimator
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -11,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.m3uplayer.databinding.ActivityMainBinding
 import com.google.android.material.chip.Chip
 import kotlinx.coroutines.Dispatchers
@@ -35,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         const val HERO_BANNER_INTERVAL_MS = 4500L
         const val OTHER_CATEGORY = "أخرى"
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "1.5.1"
+        const val BUILD_TAG = "1.6.0"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -67,6 +69,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.textBuildInfo.text = "v$BUILD_TAG"
+
+        setupScrollToHideBars()
 
         binding.editSearch.addTextChangedListener(object : android.text.TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -567,6 +571,70 @@ class MainActivity : AppCompatActivity() {
                     filterItems(binding.editSearch.text?.toString())
                 }
                 .show()
+        }
+    }
+
+    // ─── إخفاء/إظهار الشريط العلوي وعناصر التحكم عند التمرير ──────────────────
+    // عند التمرير لأسفل داخل قائمة الأفلام/المسلسلات، يختفي الشريط العلوي وصف
+    // البحث/التصنيفات تدريجيًا لتحرير الشاشة بالكامل للتصفح؛ وعند التمرير لأعلى
+    // (أو الوصول لبداية القائمة) يعودان فورًا. هذا يُطبَّق فقط على recyclerContent
+    // (تبويبات البث المباشر/الأفلام/المسلسلات/المفضلة)، وليس لوحة التحكم الرئيسية.
+
+    private var topBarsVisible = true
+    private var toolbarAnimator: ValueAnimator? = null
+    private var headerControlsAnimator: ValueAnimator? = null
+    private val toolbarHeightPx by lazy { (56 * resources.displayMetrics.density).toInt() }
+    private var headerControlsHeightPx = 0
+
+    private fun setupScrollToHideBars() {
+        binding.recyclerContent.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                if (dy > 8) hideTopBars()
+                else if (dy < -8) showTopBars()
+            }
+
+            override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+                // عند الوصول لأعلى القائمة تمامًا، أظهر الأشرطة دومًا بغض النظر عن اتجاه آخر حركة
+                if (newState == RecyclerView.SCROLL_STATE_IDLE && !recyclerView.canScrollVertically(-1)) {
+                    showTopBars()
+                }
+            }
+        })
+    }
+
+    private fun animateViewHeight(view: View, from: Int, to: Int, existingAnimator: ValueAnimator?): ValueAnimator {
+        existingAnimator?.cancel()
+        return ValueAnimator.ofInt(from, to).apply {
+            duration = 180
+            addUpdateListener { va ->
+                val params = view.layoutParams
+                params.height = va.animatedValue as Int
+                view.layoutParams = params
+            }
+            start()
+        }
+    }
+
+    private fun hideTopBars() {
+        if (!topBarsVisible) return
+        topBarsVisible = false
+        if (headerControlsHeightPx == 0) {
+            headerControlsHeightPx = binding.contentHeaderControls.height.takeIf { it > 0 } ?: return
+        }
+        toolbarAnimator = animateViewHeight(binding.toolbar, binding.toolbar.height, 0, toolbarAnimator)
+        headerControlsAnimator = animateViewHeight(
+            binding.contentHeaderControls, binding.contentHeaderControls.height, 0, headerControlsAnimator
+        )
+    }
+
+    private fun showTopBars() {
+        if (topBarsVisible) return
+        topBarsVisible = true
+        toolbarAnimator = animateViewHeight(binding.toolbar, binding.toolbar.height, toolbarHeightPx, toolbarAnimator)
+        if (headerControlsHeightPx > 0) {
+            headerControlsAnimator = animateViewHeight(
+                binding.contentHeaderControls, binding.contentHeaderControls.height, headerControlsHeightPx, headerControlsAnimator
+            )
         }
     }
 
