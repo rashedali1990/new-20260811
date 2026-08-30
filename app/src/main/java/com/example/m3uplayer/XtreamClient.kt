@@ -385,30 +385,49 @@ object XtreamClient {
             apiUrl(server, username, password, "get_series_info") + "&series_id=$seriesId"
         )
         val json = JSONObject(body)
-        val episodesObj = json.optJSONObject("episodes") ?: return emptyList()
         val result = mutableListOf<MediaEntry>()
 
-        val seasonKeys = episodesObj.keys()
-        while (seasonKeys.hasNext()) {
-            val season = seasonKeys.next()
-            val seasonArray = episodesObj.optJSONArray(season) ?: continue
-            for (i in 0 until seasonArray.length()) {
-                val ep    = seasonArray.getJSONObject(i)
-                val id    = ep.optString("id")
-                val epNum = ep.optString("episode_num", "?")
-                val title = ep.optString("title", "حلقة $epNum")
-                val ext   = ep.optJSONObject("info")?.optString("container_extension")
-                    ?: ep.optString("container_extension", "mp4")
-                result.add(
-                    MediaEntry(
-                        id       = id,
-                        title    = "الموسم $season - الحلقة $epNum",
-                        subtitle = title,
-                        playUrl  = episodeStreamUrl(server, username, password, id, ext)
+        fun parseEpisodeArray(seasonLabel: String, array: JSONArray) {
+            for (i in 0 until array.length()) {
+                try {
+                    val ep = array.getJSONObject(i)
+                    val id = ep.optString("id")
+                    if (id.isEmpty()) continue
+                    val epNum = ep.optString("episode_num", "?")
+                    val title = ep.optString("title", "حلقة $epNum")
+                    val ext = ep.optJSONObject("info")?.optString("container_extension")
+                        ?.takeIf { it.isNotEmpty() }
+                        ?: ep.optString("container_extension").takeIf { it.isNotEmpty() }
+                        ?: "mp4"
+                    result.add(
+                        MediaEntry(
+                            id       = id,
+                            title    = if (seasonLabel.isNotEmpty()) "الموسم $seasonLabel - الحلقة $epNum" else "الحلقة $epNum",
+                            subtitle = title,
+                            playUrl  = episodeStreamUrl(server, username, password, id, ext)
+                        )
                     )
-                )
+                } catch (e: Exception) {
+                    // نتجاهل حلقة واحدة تالفة البنية ونكمل الباقي، بدل إسقاط الموسم كله
+                }
             }
         }
+
+        // "episodes" غالبًا كائن JSON مقسّم حسب رقم الموسم (المواصفة الرسمية)،
+        // لكن بعض اللوحات غير الرسمية تُرجعها كمصفوفة مباشرة بلا تقسيم مواسم.
+        when (val episodesRaw = json.opt("episodes")) {
+            is JSONObject -> {
+                val seasonKeys = episodesRaw.keys()
+                while (seasonKeys.hasNext()) {
+                    val season = seasonKeys.next()
+                    val seasonArray = episodesRaw.optJSONArray(season) ?: continue
+                    parseEpisodeArray(season, seasonArray)
+                }
+            }
+            is JSONArray -> parseEpisodeArray("", episodesRaw)
+            else -> { /* لا يوجد مفتاح "episodes" بالاستجابة إطلاقًا */ }
+        }
+
         return result
     }
 }
