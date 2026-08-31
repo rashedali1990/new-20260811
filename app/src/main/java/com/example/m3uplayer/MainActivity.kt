@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         const val HERO_BANNER_INTERVAL_MS = 4500L
         const val OTHER_CATEGORY = "أخرى"
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "1.6.2"
+        const val BUILD_TAG = "1.6.3"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -406,9 +406,18 @@ class MainActivity : AppCompatActivity() {
 
             try {
                 val fresh = withContext(Dispatchers.IO) { fetchFresh() }
-                withContext(Dispatchers.IO) { cacheManager.save(cacheKey, fresh) }
-                if (currentTab == targetTab) {
-                    displayMedia(fresh)
+                // حماية: نتيجة فارغة بينما توجد بيانات محفوظة جيدة سابقًا هي حالة مشبوهة
+                // (خطأ صامت في التحديث، وليس دليلاً على أن الكتالوج أصبح فارغًا فعليًا)
+                // — لا نسمح لها بمحو ما لدينا بالفعل.
+                if (fresh.isEmpty() && !cached.isNullOrEmpty()) {
+                    if (currentTab == targetTab) {
+                        Toast.makeText(this@MainActivity, "تعذّر تحديث القائمة، تُعرض آخر بيانات محفوظة", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    withContext(Dispatchers.IO) { cacheManager.save(cacheKey, fresh) }
+                    if (currentTab == targetTab) {
+                        displayMedia(fresh)
+                    }
                 }
             } catch (e: Exception) {
                 if (cached == null) {

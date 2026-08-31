@@ -40,7 +40,7 @@ class MediaCacheManager(context: Context, profileId: String) {
         val raw = prefs.getString(key, null) ?: return null
         return try {
             val jsonArray = JSONArray(raw)
-            (0 until jsonArray.length()).map { i ->
+            val items = (0 until jsonArray.length()).map { i ->
                 val obj = jsonArray.getJSONObject(i)
                 MediaEntry(
                     id         = obj.optString("id"),
@@ -52,6 +52,9 @@ class MediaCacheManager(context: Context, profileId: String) {
                     imageUrl   = obj.optString("imageUrl").takeIf { it.isNotEmpty() && it != "null" }
                 )
             }
+            // كاش فارغ (ناتج عن تحديث سابق فشل بصمت) يُعامَل كأنه غير موجود إطلاقًا،
+            // ليُجبر التطبيق على تحميل كامل جديد بدل عرض قائمة فارغة عالقة إلى الأبد
+            items.ifEmpty { null }
         } catch (e: Exception) {
             null // كاش تالف أو بصيغة قديمة: نتجاهله ونتعامل معه كأنه غير موجود
         }
