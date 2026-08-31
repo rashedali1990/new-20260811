@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         const val HERO_BANNER_INTERVAL_MS = 4500L
         const val OTHER_CATEGORY = "أخرى"
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "1.6.1"
+        const val BUILD_TAG = "1.6.2"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -149,6 +149,7 @@ class MainActivity : AppCompatActivity() {
         if (binding.editSearch.text.isNotEmpty()) {
             binding.editSearch.setText("") // نفس السبب: نص بحث عالق من تبويب سابق كان سيُخفي أغلب المحتوى هنا أيضًا
         }
+        resetTopBarsVisibility() // نفس السبب أيضًا: حالة إخفاء الشريط عند التمرير كانت تبقى عالقة من تبويب سابق
         binding.dashboardLayout.visibility = View.GONE
         binding.splitScreenLayout.visibility = View.GONE
 
@@ -585,6 +586,26 @@ class MainActivity : AppCompatActivity() {
     private var headerControlsAnimator: ValueAnimator? = null
     private val toolbarHeightPx by lazy { (56 * resources.displayMetrics.density).toInt() }
     private var headerControlsHeightPx = 0
+
+    /**
+     * إعادة ضبط قسرية (بلا حركة/animation) لحالة إظهار الشريط عند كل تبديل تبويب.
+     * ضرورية لأن topBarsVisible حالة مشتركة بين كل التبويبات: بدون هذا، لو تم
+     * التمرير لأسفل (فيختفي الشريط) في تبويب ثم الانتقال لتبويب آخر، يبقى
+     * الشريط وعناصر التحكم مخفيّين هناك أيضًا رغم أن المستخدم لم يُمرِّر فيه إطلاقًا.
+     */
+    private fun resetTopBarsVisibility() {
+        toolbarAnimator?.cancel()
+        headerControlsAnimator?.cancel()
+        topBarsVisible = true
+
+        val toolbarParams = binding.toolbar.layoutParams
+        toolbarParams.height = toolbarHeightPx
+        binding.toolbar.layoutParams = toolbarParams
+
+        val headerParams = binding.contentHeaderControls.layoutParams
+        headerParams.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        binding.contentHeaderControls.layoutParams = headerParams
+    }
 
     private fun setupScrollToHideBars() {
         binding.recyclerContent.addOnScrollListener(object : RecyclerView.OnScrollListener() {
