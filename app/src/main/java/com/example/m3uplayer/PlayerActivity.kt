@@ -330,17 +330,24 @@ class PlayerActivity : AppCompatActivity() {
         proxyPort: Int,
         proxyType: String = "HTTP"
     ) {
+        // بعض سيرفرات Xtream ترفض أو "تُعلّق" الطلبات ذات User-Agent غير معتاد
+        // (خصوصًا للبث المباشر/المباريات، وهي أكثر مراقبة من الأفلام)، لذا نستخدم
+        // نفس القيمة التي يرسلها VLC — الأكثر قبولًا عالميًا لدى هذه السيرفرات.
+        val playerUserAgent = "VLC/3.0.18 LibVLC/3.0.18"
+
         val dataSourceFactory: DataSource.Factory = if (!proxyHost.isNullOrBlank() && proxyPort > 0) {
             // استخدام OkHttpDataSource مع بروكسي عبر OkHttpClient (HTTP أو SOCKS5)
             val type = if (proxyType.equals("SOCKS5", ignoreCase = true)) Proxy.Type.SOCKS else Proxy.Type.HTTP
             val proxy = Proxy(type, InetSocketAddress(proxyHost, proxyPort))
             val okHttpClient = okhttp3.OkHttpClient.Builder().proxy(proxy).build()
             androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(okHttpClient)
-                .setUserAgent("M3UPlayer/1.0")
+                .setUserAgent(playerUserAgent)
         } else {
             DefaultHttpDataSource.Factory()
                 .setAllowCrossProtocolRedirects(true)
-                .setUserAgent("M3UPlayer/1.0")
+                .setUserAgent(playerUserAgent)
+                .setConnectTimeoutMs(15000)
+                .setReadTimeoutMs(15000)
         }
 
         setupPlayer(streamUrl, startPosition, dataSourceFactory)
@@ -364,16 +371,78 @@ class PlayerActivity : AppCompatActivity() {
 
         player = ExoPlayer.Builder(this).build().also { exoPlayer ->
             binding.playerView.player = exoPlayer
+            exoPlayer.addListener(playerListener)
             exoPlayer.setMediaSource(mediaSource)
             exoPlayer.prepare()
             exoPlayer.seekTo(startPosition)
             exoPlayer.playWhenReady = true
         }
+
+        startBufferingWatchdog()
+    }
+
+    // ─── معالجة تعليق التحميل والأخطاء ─────────────────────────────────────────
+    // بدون هذا، فشل صامت في الاتصال (مثال: السيرفر يرفض الطلب بصمت أو يُعلّقه)
+    // يترك المستخدم أمام شاشة تحميل دائمة بلا أي مؤشر خطأ أو خيار لإعادة المحاولة.
+
+    private val bufferingWatchdogHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var bufferingWatchdogRunnable: Runnable? = null
+
+    private val playerListener = object : androidx.media3.common.Player.Listener {
+        override fun onPlaybackStateChanged(playbackState: Int) {
+            when (playbackState) {
+                androidx.media3.common.Player.STATE_READY -> cancelBufferingWatchdog()
+                androidx.media3.common.Player.STATE_BUFFERING -> startBufferingWatchdog()
+                androidx.media3.common.Player.STATE_ENDED -> cancelBufferingWatchdog()
+            }
+        }
+
+        override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+            cancelBufferingWatchdog()
+            showPlaybackErrorDialog(error.message ?: "خطأ غير معروف")
+        }
+    }
+
+    /** إن بقي المشغل في حالة "تحميل" لأكثر من 18 ثانية متواصلة، نعتبره عالقًا ونعرض خيار إعادة المحاولة. */
+    private fun startBufferingWatchdog() {
+        cancelBufferingWatchdog()
+        bufferingWatchdogRunnable = Runnable {
+            if (player?.playbackState == androidx.media3.common.Player.STATE_BUFFERING) {
+                showPlaybackErrorDialog("لم يستجب البث خلال وقت كافٍ (قد يكون الخادم بطيئًا أو القناة غير متاحة حاليًا)")
+            }
+        }
+        bufferingWatchdogHandler.postDelayed(bufferingWatchdogRunnable!!, 18000)
+    }
+
+    private fun cancelBufferingWatchdog() {
+        bufferingWatchdogRunnable?.let { bufferingWatchdogHandler.removeCallbacks(it) }
+    }
+
+    private fun showPlaybackErrorDialog(message: String) {
+        if (isFinishing) return
+        AlertDialog.Builder(this)
+            .setTitle("تعذّر تشغيل البث")
+            .setMessage(message)
+            .setCancelable(false)
+            .setPositiveButton("إعادة المحاولة") { _, _ ->
+                retryPlayback()
+            }
+            .setNegativeButton("رجوع") { _, _ -> finish() }
+            .show()
+    }
+
+    private fun retryPlayback() {
+        val factory = dataSourceFactory ?: return
+        player?.removeListener(playerListener)
+        player?.release()
+        setupPlayer(streamUrl, 0L, factory)
     }
 
     override fun onStop() {
         super.onStop()
+        cancelBufferingWatchdog()
         saveCurrentPosition()
+        player?.removeListener(playerListener)
         player?.release()
         player = null
     }
@@ -396,6 +465,8 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        cancelBufferingWatchdog()
+        player?.removeListener(playerListener)
         player?.release()
         player = null
     }
