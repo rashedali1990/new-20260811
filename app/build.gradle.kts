@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("com.google.devtools.ksp")
 }
 
 android {
@@ -35,8 +36,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            // التوقيع الفعلي يُطبَّق فقط إن توفرت متغيرات البيئة (أي داخل CI حيث
-            // تُقرأ من أسرار GitHub)؛ بناء محلي بدونها يبقى بلا توقيع كما كان سابقًا.
             if (!System.getenv("RELEASE_KEYSTORE_PATH").isNullOrBlank()) {
                 signingConfig = signingConfigs.getByName("release")
             }
@@ -54,6 +53,11 @@ android {
 
     buildFeatures {
         viewBinding = true
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
     }
 }
 
@@ -74,12 +78,24 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    // Glide for image loading
     implementation("com.github.bumptech.glide:glide:4.16.0")
-
-    // Activity KTX for registerForActivityResult
     implementation("androidx.activity:activity-ktx:1.9.1")
-
-    // ViewPager2 للبانر المميز المتحرك (Hero Banner)
     implementation("androidx.viewpager2:viewpager2:1.1.0")
+
+    // Room
+    val roomVersion = "2.6.1"
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
+
+    // Compose
+    val composeBom = "2024.06.00"
+    implementation(platform("androidx.compose:compose-bom:$composeBom"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.activity:activity-compose:1.9.1")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.4")
+    implementation("androidx.navigation:navigation-compose:2.7.7")
 }
