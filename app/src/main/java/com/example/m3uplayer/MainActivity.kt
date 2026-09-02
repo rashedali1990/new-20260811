@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         const val HERO_BANNER_INTERVAL_MS = 4500L
         const val OTHER_CATEGORY = "أخرى"
         // بصمة إصدار بسيطة (تُحدَّث يدويًا مع كل تعديل) لتأكيد أن الـ APK المُثبَّت هو الأحدث فعليًا
-        const val BUILD_TAG = "1.8.0"
+        const val BUILD_TAG = "1.9.0"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -362,12 +362,12 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
 
-                binding.recyclerLatestMovies.layoutManager = GridLayoutManager(this@MainActivity, calculateGridSpanCount())
+                binding.recyclerLatestMovies.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
                 binding.recyclerLatestMovies.adapter = PosterAdapter(items = movies.take(12), onClick = { entry ->
                     handleMediaClickAutoPlay(entry)
                 })
 
-                binding.recyclerLatestSeries.layoutManager = GridLayoutManager(this@MainActivity, calculateGridSpanCount())
+                binding.recyclerLatestSeries.layoutManager = LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
                 binding.recyclerLatestSeries.adapter = PosterAdapter(items = series.take(12), onClick = { entry ->
                     handleMediaClickAutoPlay(entry)
                 })

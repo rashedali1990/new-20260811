@@ -187,12 +187,12 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerLatestMovies"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="160dp"
                     android:layout_marginTop="6dp"
                     android:clipToPadding="false"
-                    android:nestedScrollingEnabled="false"
-                    app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-                    app:spanCount="4" />
+                    android:orientation="horizontal"
+                    android:paddingEnd="10dp"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -206,12 +206,12 @@
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recyclerLatestSeries"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="160dp"
                     android:layout_marginTop="6dp"
                     android:clipToPadding="false"
-                    android:nestedScrollingEnabled="false"
-                    app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
-                    app:spanCount="4" />
+                    android:orientation="horizontal"
+                    android:paddingEnd="10dp"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
 
