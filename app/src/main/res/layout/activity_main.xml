@@ -190,7 +190,6 @@
                     android:layout_height="160dp"
                     android:layout_marginTop="6dp"
                     android:clipToPadding="false"
-                    android:orientation="horizontal"
                     android:paddingEnd="10dp"
                     app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
@@ -209,7 +208,6 @@
                     android:layout_height="160dp"
                     android:layout_marginTop="6dp"
                     android:clipToPadding="false"
-                    android:orientation="horizontal"
                     android:paddingEnd="10dp"
                     app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
             </LinearLayout>
